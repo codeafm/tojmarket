@@ -1,0 +1,534 @@
+/* ===== ЦЕНТРИРОВАННЫЕ КАРТОЧКИ (Login, Register, etc) ===== */
+
+.centerCard {
+  width: min(520px, 100%);
+  margin: 40px auto;
+  padding: 40px 32px;
+  background: var(--card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2xl);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.5s ease;
+}
+
+/* Декоративный элемент сверху */
+.centerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient);
+  z-index: 1;
+}
+
+/* Фоновый декоративный элемент */
+.centerCard::after {
+  content: 'TM';
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  font-size: 120px;
+  font-weight: 900;
+  color: var(--border);
+  opacity: 0.1;
+  transform: rotate(-15deg);
+  pointer-events: none;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Заголовок карточки */
+.centerCard .cardTitle {
+  font-size: 32px;
+  font-weight: 900;
+  margin: 0 0 8px;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Подзаголовок */
+.centerCard .cardSubtitle {
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Поля формы */
+.centerCard .field {
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.centerCard .field span {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.centerCard .field input,
+.centerCard .field select,
+.centerCard .field textarea {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.centerCard .field input:focus,
+.centerCard .field select:focus,
+.centerCard .field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  background: var(--card);
+}
+
+.centerCard .field input::placeholder,
+.centerCard .field textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* Поле с иконкой */
+.centerCard .field-icon {
+  position: relative;
+}
+
+.centerCard .field-icon input {
+  padding-left: 50px;
+}
+
+.centerCard .field-icon .icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--primary);
+  opacity: 0.7;
+}
+
+/* Ряд из двух полей */
+.centerCard .row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 480px) {
+  .centerCard .row2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* Кнопки действий */
+.centerCard .actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.centerCard .actions .btnPrimary,
+.centerCard .actions .btnGhost {
+  flex: 1;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+}
+
+.centerCard .actions .btnPrimary {
+  background: var(--gradient);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.centerCard .actions .btnPrimary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
+}
+
+.centerCard .actions .btnGhost {
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text);
+}
+
+.centerCard .actions .btnGhost:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+/* Сообщения об ошибках */
+.centerCard .error-message {
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--danger);
+  font-weight: 600;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.centerCard .error-message::before {
+  content: '⚠️';
+  font-size: 20px;
+}
+
+/* Сообщения об успехе */
+.centerCard .success-message {
+  padding: 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--success);
+  font-weight: 600;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.centerCard .success-message::before {
+  content: '✅';
+  font-size: 20px;
+}
+
+/* Разделитель */
+.centerCard .divider {
+  position: relative;
+  text-align: center;
+  margin: 30px 0;
+  z-index: 2;
+}
+
+.centerCard .divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+  z-index: 1;
+}
+
+.centerCard .divider span {
+  position: relative;
+  background: var(--card);
+  padding: 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* Социальные кнопки */
+.centerCard .social-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+  z-index: 2;
+  position: relative;
+}
+
+.centerCard .social-btn {
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: var(--transition);
+}
+
+.centerCard .social-btn:hover {
+  background: var(--card);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--primary);
+}
+
+.centerCard .social-btn.google:hover {
+  border-color: #DB4437;
+  color: #DB4437;
+}
+
+.centerCard .social-btn.facebook:hover {
+  border-color: #4267B2;
+  color: #4267B2;
+}
+
+/* Ссылки */
+.centerCard .auth-link {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--muted);
+  z-index: 2;
+  position: relative;
+}
+
+.centerCard .auth-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 8px;
+  transition: var(--transition);
+}
+
+.centerCard .auth-link a:hover {
+  text-decoration: underline;
+}
+
+/* Чекбокс */
+.centerCard .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  cursor: pointer;
+  z-index: 2;
+  position: relative;
+}
+
+.centerCard .checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.centerCard .checkbox span {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Индикатор силы пароля */
+.centerCard .password-strength {
+  margin-top: 8px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.centerCard .password-strength .strength-bar {
+  height: 100%;
+  width: 0;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.centerCard .password-strength .strength-bar.weak {
+  width: 33.33%;
+  background: var(--danger);
+}
+
+.centerCard .password-strength .strength-bar.medium {
+  width: 66.66%;
+  background: var(--warning);
+}
+
+.centerCard .password-strength .strength-bar.strong {
+  width: 100%;
+  background: var(--success);
+}
+
+/* ===== PHOTO PLACEHOLDER ===== */
+
+.photoPh {
+  border: 2px dashed var(--border);
+  background: linear-gradient(135deg, var(--bg), var(--bg2));
+  border-radius: var(--radius-lg);
+  padding: 30px 20px;
+  font-weight: 900;
+  color: var(--muted);
+  text-align: center;
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.photoPh:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: scale(1.02);
+  box-shadow: var(--shadow);
+}
+
+/* Большой плейсхолдер для фото */
+.photoPh.big {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 18px;
+}
+
+.photoPh.big::before {
+  content: '📷';
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+/* Маленький плейсхолдер для фото */
+.photoPh.small {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.photoPh.small::before {
+  content: '📷';
+  font-size: 20px;
+  opacity: 0.5;
+}
+
+/* Плейсхолдер для миниатюр */
+.photoPh.thumb {
+  aspect-ratio: 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  min-height: auto;
+}
+
+.photoPh.thumb::before {
+  content: '📷';
+  font-size: 24px;
+}
+
+/* Анимация загрузки */
+.photoPh.loading {
+  animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Состояние ошибки */
+.photoPh.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.photoPh.error::before {
+  content: '❌';
+}
+
+/* Группа фото */
+.photoGroup {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .centerCard {
+    margin: 20px auto;
+    padding: 30px 20px;
+  }
+
+  .centerCard .cardTitle {
+    font-size: 28px;
+  }
+
+  .centerCard .actions {
+    flex-direction: column;
+  }
+
+  .centerCard .social-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .photoPh.big {
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .centerCard {
+    padding: 24px 16px;
+  }
+
+  .centerCard .cardTitle {
+    font-size: 24px;
+  }
+
+  .centerCard .field input,
+  .centerCard .field select,
+  .centerCard .field textarea {
+    padding: 14px 16px;
+  }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+  .centerCard::after {
+    opacity: 0.05;
+  }
+
+  .photoPh {
+    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  }
+}
