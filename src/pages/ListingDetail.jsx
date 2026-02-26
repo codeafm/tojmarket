@@ -1,3 +1,4 @@
+// src/pages/ListingDetail.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
@@ -26,19 +27,36 @@ export default function ListingDetail() {
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [actionFeedback, setActionFeedback] = useState({ show: false, action: "", success: false });
+  const [connectionError, setConnectionError] = useState(false);
 
   const views = useMemo(() => item?.stats?.views ?? item?.views ?? 0, [item]);
 
   const createdLabel = useMemo(() => {
     const ts = item?.createdAt;
-    const seconds = ts?.seconds;
-    if (!seconds) return "";
-    const d = new Date(seconds * 1000);
-    return d.toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    // Проверяем разные форматы даты
+    if (ts?.seconds) {
+      const d = new Date(ts.seconds * 1000);
+      return d.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } else if (ts?.toDate) {
+      const d = ts.toDate();
+      return d.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } else if (ts) {
+      const d = new Date(ts);
+      return d.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+    return "";
   }, [item]);
 
   const formatPrice = useCallback((v) => {
@@ -49,13 +67,9 @@ export default function ListingDetail() {
 
   const formatPhone = useCallback((phone) => {
     if (!phone) return "Не указан";
-    // Если номер уже отформатирован
     if (phone.includes('+')) return phone;
     
-    // Очищаем номер от всех символов кроме цифр
     const cleaned = phone.replace(/\D/g, "");
-    
-    // Форматируем в зависимости от длины
     if (cleaned.length === 12) {
       return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "+$1 ($2) $3-$4-$5");
     } else if (cleaned.length === 11) {
@@ -86,7 +100,6 @@ export default function ListingDetail() {
         const sellerData = sellerSnap.data();
         console.log("Профиль продавца загружен:", sellerData);
         
-        // Создаем объект с нужными полями из структуры Firebase
         const profileData = {
           name: sellerData.username || sellerData.displayName || sellerData.name || "Продавец",
           phone: sellerData.phone || "",
@@ -97,11 +110,20 @@ export default function ListingDetail() {
           uid: sellerData.uid
         };
         
-        console.log("Сформированный профиль:", profileData);
         setSellerProfile(profileData);
         return profileData;
       } else {
         console.log("Профиль продавца не найден в Firebase");
+        // Пробуем получить через getUserProfile как запасной вариант
+        try {
+          const profile = await getUserProfile(ownerId);
+          if (profile) {
+            setSellerProfile(profile);
+            return profile;
+          }
+        } catch (e) {
+          console.error("Запасной вариант тоже не сработал:", e);
+        }
         return null;
       }
     } catch (error) {
@@ -115,6 +137,8 @@ export default function ListingDetail() {
 
     (async () => {
       setLoading(true);
+      setConnectionError(false);
+      
       try {
         console.log("Загружаем объявление с ID:", id);
         const data = await getListing(id);
@@ -133,32 +157,38 @@ export default function ListingDetail() {
         setCurrentImage(data?.photos?.[0] || null);
         
         // Загружаем профиль продавца - используем правильные поля из вашей БД
-        const ownerId = data.ownerId || data.ownerUid || data.sellerId || data.userId;
+        const ownerId = data.ownerId || data.ownerUid || data.sellerId;
         console.log("ownerId для загрузки:", ownerId);
         
         if (ownerId) {
-          // Загружаем профиль из Firebase
-          await fetchSellerProfile(ownerId);
-        } else {
-          console.log("Нет ownerId в объявлении");
+          const profile = await fetchSellerProfile(ownerId);
+          if (!profile) {
+            console.log("Профиль не найден, но это не критично");
+          }
         }
 
         if (data?.category) {
           const sim = await listRecommendedByCategory(data.category, id, 8);
           if (!alive) return;
           setSimilar(sim || []);
-        } else {
-          setSimilar([]);
         }
 
-        await incrementListingViews(id);
+        // Увеличиваем просмотры (не критично если не сработает)
+        try {
+          await incrementListingViews(id);
+        } catch (viewError) {
+          console.warn("Не удалось увеличить просмотры:", viewError);
+        }
 
         if (user) {
           const wishlist = JSON.parse(localStorage.getItem(`wishlist_${user.uid}`) || "[]");
           setInWishlist(wishlist.includes(id));
         }
       } catch (e) {
-        console.error(e);
+        console.error("Ошибка загрузки:", e);
+        if (e.code === 'permission-denied') {
+          setConnectionError(true);
+        }
         if (alive) setItem({ _error: true });
       } finally {
         if (alive) setLoading(false);
@@ -199,29 +229,12 @@ export default function ListingDetail() {
 
   // Обработчики кнопок
   const handleCall = useCallback(() => {
-    console.log("handleCall - sellerProfile:", sellerProfile);
-    
-    // Берем телефон из профиля продавца
     const phone = sellerProfile?.phone || "";
-    
-    console.log("Телефон для звонка:", phone);
-    
-    if (phone && phone.trim() !== "") {
+    if (phone) {
       const cleanPhone = getCleanPhone(phone);
-      if (cleanPhone && cleanPhone.length >= 10) {
-        try {
-          window.location.href = `tel:${cleanPhone}`;
-          showNotification("success", `📞 Звонок на ${formatPhone(phone)}`);
-          showActionFeedback("Звонок инициирован", true);
-        } catch (error) {
-          console.error("Ошибка при звонке:", error);
-          showNotification("error", "❌ Не удалось совершить звонок");
-          showActionFeedback("Ошибка", false);
-        }
-      } else {
-        showNotification("error", "❌ Некорректный номер");
-        showActionFeedback("Ошибка", false);
-      }
+      window.location.href = `tel:${cleanPhone}`;
+      showNotification("success", `📞 Звонок на ${formatPhone(phone)}`);
+      showActionFeedback("Звонок инициирован", true);
     } else {
       showNotification("error", "❌ Номер не указан");
       showActionFeedback("Нет номера", false);
@@ -229,30 +242,12 @@ export default function ListingDetail() {
   }, [sellerProfile, formatPhone, getCleanPhone, showNotification, showActionFeedback]);
 
   const handleWhatsApp = useCallback(() => {
-    console.log("handleWhatsApp - sellerProfile:", sellerProfile);
-    
-    // Берем WhatsApp из профиля продавца
-    const phone = sellerProfile?.whatsapp || "";
-    
-    console.log("WhatsApp номер:", phone);
-    
-    if (phone && phone.trim() !== "") {
+    const phone = sellerProfile?.whatsapp || sellerProfile?.phone || "";
+    if (phone) {
       const cleanPhone = getCleanPhone(phone);
-      if (cleanPhone && cleanPhone.length >= 10) {
-        try {
-          const waUrl = `https://wa.me/${cleanPhone}`;
-          window.open(waUrl, "_blank");
-          showNotification("success", "💬 WhatsApp открыт");
-          showActionFeedback("WhatsApp открыт", true);
-        } catch (error) {
-          console.error("Ошибка при открытии WhatsApp:", error);
-          showNotification("error", "❌ Не удалось открыть WhatsApp");
-          showActionFeedback("Ошибка", false);
-        }
-      } else {
-        showNotification("error", "❌ Некорректный номер");
-        showActionFeedback("Ошибка", false);
-      }
+      window.open(`https://wa.me/${cleanPhone}`, "_blank");
+      showNotification("success", "💬 WhatsApp открыт");
+      showActionFeedback("WhatsApp открыт", true);
     } else {
       showNotification("error", "❌ WhatsApp не указан");
       showActionFeedback("Нет WhatsApp", false);
@@ -260,26 +255,11 @@ export default function ListingDetail() {
   }, [sellerProfile, getCleanPhone, showNotification, showActionFeedback]);
 
   const handleEmail = useCallback(() => {
-    console.log("handleEmail - sellerProfile:", sellerProfile);
-    
     const email = sellerProfile?.email || "";
-    
-    console.log("Email:", email);
-    
-    if (email && email.trim() !== "" && email.includes('@')) {
-      try {
-        const subject = encodeURIComponent(`Вопрос по объявлению: ${item?.title || "Объявление"}`);
-        const body = encodeURIComponent(
-          `Здравствуйте! Меня интересует ваше объявление:\n\n${window.location.href}\n\nСпасибо!`
-        );
-        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-        showNotification("success", `✉️ Email: ${email}`);
-        showActionFeedback("Email открыт", true);
-      } catch (error) {
-        console.error("Ошибка при открытии email:", error);
-        showNotification("error", "❌ Не удалось открыть почтовый клиент");
-        showActionFeedback("Ошибка", false);
-      }
+    if (email && email.includes('@')) {
+      window.location.href = `mailto:${email}?subject=Вопрос по объявлению: ${item?.title}`;
+      showNotification("success", `✉️ Email: ${email}`);
+      showActionFeedback("Email открыт", true);
     } else {
       showNotification("error", "❌ Email не указан");
       showActionFeedback("Нет email", false);
@@ -313,42 +293,24 @@ export default function ListingDetail() {
   }, [user, inWishlist, id, navigate, showNotification, showActionFeedback]);
 
   const handleShare = useCallback(() => {
-    const shareData = {
-      title: item?.title || "Объявление на TojMarket",
-      url: window.location.href,
-    };
-
     if (navigator.share) {
-      navigator.share(shareData)
-        .then(() => {
-          showNotification("success", "📤 Поделились успешно!");
-          showActionFeedback("Поделились", true);
-        })
-        .catch((error) => {
-          if (error.name !== 'AbortError') {
-            console.error("Ошибка при шаринге:", error);
-            copyToClipboard();
-          }
-        });
+      navigator.share({
+        title: item?.title,
+        url: window.location.href,
+      }).catch(() => {
+        navigator.clipboard.writeText(window.location.href);
+        showNotification("success", "📋 Ссылка скопирована");
+        showActionFeedback("Ссылка скопирована", true);
+      });
     } else {
-      copyToClipboard();
-    }
-
-    function copyToClipboard() {
-      navigator.clipboard.writeText(window.location.href)
-        .then(() => {
-          showNotification("success", "📋 Ссылка скопирована");
-          showActionFeedback("Ссылка скопирована", true);
-        })
-        .catch(() => {
-          showNotification("error", "❌ Не удалось скопировать ссылку");
-          showActionFeedback("Ошибка", false);
-        });
+      navigator.clipboard.writeText(window.location.href);
+      showNotification("success", "📋 Ссылка скопирована");
+      showActionFeedback("Ссылка скопирована", true);
     }
   }, [item, showNotification, showActionFeedback]);
 
   const handleViewSeller = useCallback(() => {
-    const ownerId = item?.ownerId || item?.ownerUid || item?.sellerId || item?.userId;
+    const ownerId = item?.ownerId || item?.ownerUid || item?.sellerId;
     if (ownerId) {
       navigate(`/user/${ownerId}`);
       showNotification("success", "👤 Профиль продавца открыт");
@@ -368,12 +330,10 @@ export default function ListingDetail() {
     setShowContactInfo(!showContactInfo);
   }, [showContactInfo]);
 
-  // Проверяем наличие контактов из профиля продавца
   const hasPhone = !!(sellerProfile?.phone);
   const hasWhatsApp = !!(sellerProfile?.whatsapp);
   const hasEmail = !!(sellerProfile?.email);
 
-  // Логируем для отладки
   console.log("sellerProfile:", sellerProfile);
   console.log("hasPhone:", hasPhone, "phone:", sellerProfile?.phone);
   console.log("hasWhatsApp:", hasWhatsApp, "whatsapp:", sellerProfile?.whatsapp);
@@ -384,6 +344,19 @@ export default function ListingDetail() {
       <div className="loading-state">
         <div className="loading-spinner" />
         <p>Загружаем объявление...</p>
+      </div>
+    );
+  }
+
+  if (connectionError) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">🔌</div>
+        <h3>Ошибка соединения</h3>
+        <p>Проверьте подключение к интернету</p>
+        <button onClick={() => window.location.reload()} className="btnPrimary">
+          Обновить
+        </button>
       </div>
     );
   }
@@ -414,7 +387,7 @@ export default function ListingDetail() {
 
   const plan = String(item.plan || "base").toLowerCase();
   const photos = item.photos || [];
-  const hasSpecs = item.attrs && Object.keys(item.attrs).length > 0;
+  const hasSpecs = item.spec && Object.keys(item.spec).length > 0;
 
   return (
     <div className="listing-detail-page">
@@ -585,7 +558,7 @@ export default function ListingDetail() {
                 <div className="detail-section">
                   <h3 className="section-title">Характеристики</h3>
                   <div className="specs-grid">
-                    {Object.entries(item.attrs)
+                    {Object.entries(item.spec)
                       .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "")
                       .map(([key, value]) => (
                         <div className="spec-item" key={key}>
