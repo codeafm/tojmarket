@@ -241,19 +241,36 @@ export default function ListingDetail() {
     }
   }, [sellerProfile, formatPhone, getCleanPhone, showNotification, showActionFeedback]);
 
-  const handleWhatsApp = useCallback(() => {
-    const phone = sellerProfile?.whatsapp || sellerProfile?.phone || "";
-    if (phone) {
-      const cleanPhone = getCleanPhone(phone);
-      window.open(`https://wa.me/${cleanPhone}`, "_blank");
-      showNotification("success", "💬 WhatsApp открыт");
-      showActionFeedback("WhatsApp открыт", true);
-    } else {
-      showNotification("error", "❌ WhatsApp не указан");
-      showActionFeedback("Нет WhatsApp", false);
-    }
-  }, [sellerProfile, getCleanPhone, showNotification, showActionFeedback]);
-
+// Обновленная функция handleWhatsApp с предзаполненным сообщением
+const handleWhatsApp = useCallback(() => {
+  const phone = sellerProfile?.whatsapp || sellerProfile?.phone || "";
+  if (phone) {
+    const cleanPhone = getCleanPhone(phone);
+    
+    // Создаем предзаполненное сообщение с информацией о товаре
+    const message = encodeURIComponent(
+      `Здравствуйте! Меня интересует ваше объявление:\n\n` +
+      `🚗 *${item?.title || "Товар"}*\n` +
+      `💰 Цена: ${formatPrice(item?.price)} TJS\n` +
+      `📍 Город: ${item?.city || "Не указан"}\n` +
+      `📦 Категория: ${item?.category || "Не указана"}\n\n` +
+      `🔗 Ссылка на объявление: ${window.location.href}\n\n` +
+      `Скажите, пожалуйста, товар еще доступен?`
+    );
+    
+    // Формируем ссылку для WhatsApp с сообщением
+    const waUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+    
+    // Открываем в новой вкладке
+    window.open(waUrl, "_blank");
+    
+    showNotification("success", "💬 WhatsApp открыт с сообщением о товаре");
+    showActionFeedback("Сообщение готово", true);
+  } else {
+    showNotification("error", "❌ WhatsApp не указан");
+    showActionFeedback("Нет WhatsApp", false);
+  }
+}, [sellerProfile, item, formatPrice, getCleanPhone, showNotification, showActionFeedback]);
   const handleEmail = useCallback(() => {
     const email = sellerProfile?.email || "";
     if (email && email.includes('@')) {
