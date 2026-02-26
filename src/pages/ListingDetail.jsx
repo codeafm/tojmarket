@@ -33,7 +33,6 @@ export default function ListingDetail() {
 
   const createdLabel = useMemo(() => {
     const ts = item?.createdAt;
-    // Проверяем разные форматы даты
     if (ts?.seconds) {
       const d = new Date(ts.seconds * 1000);
       return d.toLocaleDateString("ru-RU", {
@@ -62,7 +61,7 @@ export default function ListingDetail() {
   const formatPrice = useCallback((v) => {
     const n = Number(v);
     if (!Number.isFinite(n)) return "—";
-    return n.toLocaleString("ru-RU");
+    return n.toLocaleString("ru-RU") + " TJS";
   }, []);
 
   const formatPhone = useCallback((phone) => {
@@ -85,14 +84,12 @@ export default function ListingDetail() {
     return phone.replace(/\D/g, "");
   }, []);
 
-  // Получение данных продавца из Firebase
   const fetchSellerProfile = useCallback(async (ownerId) => {
     if (!ownerId) return null;
     
     try {
       console.log("Загружаем профиль продавца с ID:", ownerId);
       
-      // Прямой запрос к коллекции users
       const sellerRef = doc(db, "users", ownerId);
       const sellerSnap = await getDoc(sellerRef);
       
@@ -114,7 +111,6 @@ export default function ListingDetail() {
         return profileData;
       } else {
         console.log("Профиль продавца не найден в Firebase");
-        // Пробуем получить через getUserProfile как запасной вариант
         try {
           const profile = await getUserProfile(ownerId);
           if (profile) {
@@ -156,7 +152,6 @@ export default function ListingDetail() {
         setItem(data);
         setCurrentImage(data?.photos?.[0] || null);
         
-        // Загружаем профиль продавца - используем правильные поля из вашей БД
         const ownerId = data.ownerId || data.ownerUid || data.sellerId;
         console.log("ownerId для загрузки:", ownerId);
         
@@ -173,7 +168,6 @@ export default function ListingDetail() {
           setSimilar(sim || []);
         }
 
-        // Увеличиваем просмотры (не критично если не сработает)
         try {
           await incrementListingViews(id);
         } catch (viewError) {
@@ -200,19 +194,16 @@ export default function ListingDetail() {
     };
   }, [id, user, fetchSellerProfile]);
 
-  // Функция для показа уведомлений
   const showNotification = useCallback((type, message) => {
     setNotification({ show: true, type, message });
     setTimeout(() => setNotification({ show: false, type: "", message: "" }), 3000);
   }, []);
 
-  // Функция для показа обратной связи
   const showActionFeedback = useCallback((action, success = true) => {
     setActionFeedback({ show: true, action, success });
     setTimeout(() => setActionFeedback({ show: false, action: "", success: false }), 2000);
   }, []);
 
-  // Навигация по изображениям
   const nextImage = useCallback(() => {
     if (!item?.photos?.length) return;
     const newIndex = (selectedImageIndex + 1) % item.photos.length;
@@ -227,7 +218,6 @@ export default function ListingDetail() {
     setCurrentImage(item.photos[newIndex]);
   }, [item?.photos, selectedImageIndex]);
 
-  // Обработчики кнопок
   const handleCall = useCallback(() => {
     const phone = sellerProfile?.phone || "";
     if (phone) {
@@ -241,36 +231,32 @@ export default function ListingDetail() {
     }
   }, [sellerProfile, formatPhone, getCleanPhone, showNotification, showActionFeedback]);
 
-// Обновленная функция handleWhatsApp с предзаполненным сообщением
-const handleWhatsApp = useCallback(() => {
-  const phone = sellerProfile?.whatsapp || sellerProfile?.phone || "";
-  if (phone) {
-    const cleanPhone = getCleanPhone(phone);
-    
-    // Создаем предзаполненное сообщение с информацией о товаре
-    const message = encodeURIComponent(
-      `Здравствуйте! Меня интересует ваше объявление:\n\n` +
-      `🚗 *${item?.title || "Товар"}*\n` +
-      `💰 Цена: ${formatPrice(item?.price)} TJS\n` +
-      `📍 Город: ${item?.city || "Не указан"}\n` +
-      `📦 Категория: ${item?.category || "Не указана"}\n\n` +
-      `🔗 Ссылка на объявление: ${window.location.href}\n\n` +
-      `Скажите, пожалуйста, товар еще доступен?`
-    );
-    
-    // Формируем ссылку для WhatsApp с сообщением
-    const waUrl = `https://wa.me/${cleanPhone}?text=${message}`;
-    
-    // Открываем в новой вкладке
-    window.open(waUrl, "_blank");
-    
-    showNotification("success", "💬 WhatsApp открыт с сообщением о товаре");
-    showActionFeedback("Сообщение готово", true);
-  } else {
-    showNotification("error", "❌ WhatsApp не указан");
-    showActionFeedback("Нет WhatsApp", false);
-  }
-}, [sellerProfile, item, formatPrice, getCleanPhone, showNotification, showActionFeedback]);
+  const handleWhatsApp = useCallback(() => {
+    const phone = sellerProfile?.whatsapp || sellerProfile?.phone || "";
+    if (phone) {
+      const cleanPhone = getCleanPhone(phone);
+      
+      const message = encodeURIComponent(
+        `Здравствуйте! Меня интересует ваше объявление:\n\n` +
+        `🚗 *${item?.title || "Товар"}*\n` +
+        `💰 Цена: ${formatPrice(item?.price)}\n` +
+        `📍 Город: ${item?.city || "Не указан"}\n` +
+        `📦 Категория: ${item?.category || "Не указана"}\n\n` +
+        `🔗 Ссылка на объявление: ${window.location.href}\n\n` +
+        `Скажите, пожалуйста, товар еще доступен?`
+      );
+      
+      const waUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+      window.open(waUrl, "_blank");
+      
+      showNotification("success", "💬 WhatsApp открыт");
+      showActionFeedback("Сообщение готово", true);
+    } else {
+      showNotification("error", "❌ WhatsApp не указан");
+      showActionFeedback("Нет WhatsApp", false);
+    }
+  }, [sellerProfile, item, formatPrice, getCleanPhone, showNotification, showActionFeedback]);
+
   const handleEmail = useCallback(() => {
     const email = sellerProfile?.email || "";
     if (email && email.includes('@')) {
@@ -351,51 +337,48 @@ const handleWhatsApp = useCallback(() => {
   const hasWhatsApp = !!(sellerProfile?.whatsapp);
   const hasEmail = !!(sellerProfile?.email);
 
-  console.log("sellerProfile:", sellerProfile);
-  console.log("hasPhone:", hasPhone, "phone:", sellerProfile?.phone);
-  console.log("hasWhatsApp:", hasWhatsApp, "whatsapp:", sellerProfile?.whatsapp);
-  console.log("hasEmail:", hasEmail, "email:", sellerProfile?.email);
-
   if (loading) {
     return (
-      <div className="loading-state">
-        <div className="loading-spinner" />
-        <p>Загружаем объявление...</p>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Загружаем объявление...</p>
       </div>
     );
   }
 
   if (connectionError) {
     return (
-      <div className="empty-state">
-        <div className="empty-icon">🔌</div>
-        <h3>Ошибка соединения</h3>
-        <p>Проверьте подключение к интернету</p>
-        <button onClick={() => window.location.reload()} className="btnPrimary">
+      <div className="error-container">
+        <div className="error-icon">🔌</div>
+        <h2 className="error-title">Ошибка соединения</h2>
+        <p className="error-message">Проверьте подключение к интернету</p>
+        <button onClick={() => window.location.reload()} className="error-button">
           Обновить
         </button>
       </div>
     );
   }
 
-  if (!item) return <div className="empty-state">Загрузка…</div>;
+  if (!item) return <div className="empty-container">Загрузка…</div>;
+  
   if (item._missing) {
     return (
-      <div className="empty-state">
+      <div className="empty-container">
         <div className="empty-icon">🔍</div>
-        <h3>Объявление не найдено</h3>
-        <p>Возможно, оно было удалено или никогда не существовало</p>
-        <Link to="/listings" className="btnPrimary">Вернуться к списку</Link>
+        <h2 className="empty-title">Объявление не найдено</h2>
+        <p className="empty-message">Возможно, оно было удалено или никогда не существовало</p>
+        <Link to="/listings" className="empty-button">Вернуться к списку</Link>
       </div>
     );
   }
+  
   if (item._error) {
     return (
-      <div className="empty-state">
-        <div className="empty-icon">⚠️</div>
-        <h3>Ошибка загрузки</h3>
-        <p>Не удалось загрузить объявление. Попробуйте позже</p>
-        <button onClick={() => window.location.reload()} className="btnPrimary">
+      <div className="error-container">
+        <div className="error-icon">⚠️</div>
+        <h2 className="error-title">Ошибка загрузки</h2>
+        <p className="error-message">Не удалось загрузить объявление. Попробуйте позже</p>
+        <button onClick={() => window.location.reload()} className="error-button">
           Обновить
         </button>
       </div>
@@ -407,10 +390,10 @@ const handleWhatsApp = useCallback(() => {
   const hasSpecs = item.spec && Object.keys(item.spec).length > 0;
 
   return (
-    <div className="listing-detail-page">
+    <div className="listing-detail">
       {/* Уведомления */}
       {notification.show && (
-        <div className={`notification ${notification.type}`}>
+        <div className={`notification notification-${notification.type}`}>
           <span className="notification-icon">
             {notification.type === "success" ? "✅" : 
              notification.type === "error" ? "❌" : 
@@ -422,73 +405,71 @@ const handleWhatsApp = useCallback(() => {
 
       {/* Обратная связь на кнопке */}
       {actionFeedback.show && (
-        <div className={`action-feedback ${actionFeedback.success ? 'success' : 'error'}`}>
+        <div className={`action-feedback action-feedback-${actionFeedback.success ? 'success' : 'error'}`}>
           <span className="feedback-icon">{actionFeedback.success ? '✓' : '✗'}</span>
           <span className="feedback-message">{actionFeedback.action}</span>
         </div>
       )}
 
-      {/* Верхняя навигация */}
-      <div className="detail-navigation">
-        <button onClick={() => navigate(-1)} className="btnGhost">
+      {/* Навигация */}
+      <nav className="detail-nav">
+        <button onClick={() => navigate(-1)} className="nav-back">
           ← Назад
         </button>
-        <div className="detail-breadcrumbs muted small">
-          <Link to={`/category/${item.category}`} className="breadcrumb-link">
+        <div className="nav-info">
+          <Link to={`/category/${item.category}`} className="nav-link">
             {item.category || "—"}
           </Link>
-          <span className="separator">•</span>
+          <span className="nav-separator">•</span>
           <span>{item.city || "—"}</span>
           {createdLabel && (
             <>
-              <span className="separator">•</span>
+              <span className="nav-separator">•</span>
               <span>{createdLabel}</span>
             </>
           )}
-          <span className="separator">•</span>
-          <span className="views-count">👁 {views.toLocaleString()}</span>
+          <span className="nav-separator">•</span>
+          <span className="nav-views">👁 {views.toLocaleString()}</span>
         </div>
-        <div className="detail-actions">
-          <button onClick={handleShare} className="btn-icon iconBtn" title="Поделиться">
-            📤
-          </button>
-        </div>
-      </div>
+        <button onClick={handleShare} className="nav-share" title="Поделиться">
+          📤
+        </button>
+      </nav>
 
-      <div className="detail-layout">
-        {/* Левая колонка - основная информация */}
+      <div className="detail-grid">
+        {/* Левая колонка */}
         <div className="detail-main">
           {/* Галерея */}
-          <div className="card gallery-card">
+          <section className="gallery-section">
             <div className="gallery-main">
               {currentImage ? (
                 <img 
                   src={currentImage} 
                   alt={item.title || "Фото"} 
                   onClick={() => setShowFullGallery(true)}
-                  className="gallery-main-image"
+                  className="gallery-image"
                 />
               ) : (
                 <div className="gallery-placeholder">
-                  <span>📷</span>
-                  <p>Нет фото</p>
+                  <span className="placeholder-icon">📷</span>
+                  <p className="placeholder-text">Нет фото</p>
                 </div>
               )}
 
               {photos.length > 1 && (
                 <>
-                  <button className="gallery-nav prev" onClick={prevImage}>
+                  <button className="gallery-nav gallery-prev" onClick={prevImage}>
                     ←
                   </button>
-                  <button className="gallery-nav next" onClick={nextImage}>
+                  <button className="gallery-nav gallery-next" onClick={nextImage}>
                     →
                   </button>
                 </>
               )}
 
-              <span className={`badge-plan ${plan}`}>
-                {plan === "vip" ? "VIP" : plan === "top" ? "TOP" : "Базовый"}
-              </span>
+              <div className={`listing-badge badge-${plan}`}>
+                {plan === "vip" ? "⭐ VIP" : plan === "top" ? "🔥 TOP" : "📋 Базовый"}
+              </div>
             </div>
 
             {photos.length > 1 && (
@@ -496,84 +477,93 @@ const handleWhatsApp = useCallback(() => {
                 {photos.map((photo, index) => (
                   <button
                     key={index}
-                    className={`gallery-thumb ${index === selectedImageIndex ? "active" : ""}`}
+                    className={`gallery-thumb ${index === selectedImageIndex ? 'active' : ''}`}
                     onClick={() => {
                       setSelectedImageIndex(index);
                       setCurrentImage(photo);
                     }}
                   >
-                    <img src={photo} alt={`Фото ${index + 1}`} />
+                    <img src={photo} alt={`Фото ${index + 1}`} className="thumb-image" />
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
           {/* Информация о товаре */}
-          <div className="card detail-info">
-            <div className="detail-header">
-              <h1 className="detail-title">{item.title || "—"}</h1>
-            </div>
-
-            <div className="detail-price-section">
-              <div className="detail-price">{formatPrice(item.price)} TJS</div>
-              <div className="detail-meta">
-                <span className="meta-chip">📍 {item.city || "—"}</span>
-                <span className="meta-chip">📦 {item.category || "—"}</span>
+          <section className="info-section">
+            <header className="info-header">
+              <h1 className="info-title">{item.title || "—"}</h1>
+              <div className="info-price">
+                <span className="price-currency">TJS</span>
+                <span className="price-amount">{formatPrice(item.price).replace(' TJS', '')}</span>
               </div>
+            </header>
+            
+            <div className="info-tags">
+              <span className="info-tag">
+                <span className="tag-icon">📍</span>
+                {item.city || "—"}
+              </span>
+              <span className="info-tag">
+                <span className="tag-icon">📦</span>
+                {item.category || "—"}
+              </span>
             </div>
 
-            <div className="divider" />
+            <div className="info-divider"></div>
 
-            {/* Информация о продавце */}
-            <div className="detail-section seller-info">
-              <h3 className="section-title">Продавец</h3>
+            {/* Продавец */}
+            <div className="seller-section">
+              <h3 className="section-title">👤 Продавец</h3>
               <div className="seller-card">
                 <div className="seller-avatar" onClick={handleViewSeller}>
                   {sellerProfile?.name?.[0] || item.ownerName?.[0] || item.sellerName?.[0] || "?"}
                 </div>
                 <div className="seller-details">
-                  <h4 onClick={handleViewSeller} className="seller-name">
+                  <div className="seller-name" onClick={handleViewSeller}>
                     {sellerProfile?.name || item.ownerName || item.sellerName || "Продавец"}
-                  </h4>
-                  {sellerProfile?.verified && (
-                    <span className="verified-badge">✓ Проверенный продавец</span>
-                  )}
-                  {hasPhone && (
-                    <span className="seller-phone small" onClick={handleCall}>
-                      📞 {formatPhone(sellerProfile?.phone)}
-                    </span>
-                  )}
-                  {hasWhatsApp && !hasPhone && (
-                    <span className="seller-phone small" onClick={handleWhatsApp}>
-                      💬 {formatPhone(sellerProfile?.whatsapp)}
-                    </span>
-                  )}
+                    {sellerProfile?.verified && (
+                      <span className="verified-badge" title="Подтвержденный продавец">✓</span>
+                    )}
+                  </div>
+                  <div className="seller-contacts">
+                    {hasPhone && (
+                      <span className="seller-contact" onClick={handleCall}>
+                        📞 {formatPhone(sellerProfile?.phone)}
+                      </span>
+                    )}
+                    {hasWhatsApp && !hasPhone && (
+                      <span className="seller-contact" onClick={handleWhatsApp}>
+                        💬 {formatPhone(sellerProfile?.whatsapp)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <button className="btn-secondary btn-sm" onClick={handleViewSeller}>
+                <button className="seller-profile-btn" onClick={handleViewSeller}>
                   Профиль
                 </button>
               </div>
             </div>
 
-            <div className="divider" />
+            <div className="info-divider"></div>
 
             {/* Описание */}
-            <div className="detail-section">
-              <h3 className="section-title">Описание</h3>
+            <div className="description-section">
+              <h3 className="section-title">📝 Описание</h3>
               {item.description ? (
-                <div className="detail-description">{item.description}</div>
+                <p className="description-text">{item.description}</p>
               ) : (
-                <p className="muted">Описание отсутствует</p>
+                <p className="description-empty">Описание отсутствует</p>
               )}
             </div>
 
             {/* Характеристики */}
             {hasSpecs && (
               <>
-                <div className="divider" />
-                <div className="detail-section">
-                  <h3 className="section-title">Характеристики</h3>
+                <div className="info-divider"></div>
+                <div className="specs-section">
+                  <h3 className="section-title">⚙️ Характеристики</h3>
                   <div className="specs-grid">
                     {Object.entries(item.spec)
                       .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "")
@@ -587,189 +577,197 @@ const handleWhatsApp = useCallback(() => {
                 </div>
               </>
             )}
-          </div>
+          </section>
 
           {/* Похожие объявления */}
-          <div className="card similar-section">
-            <div className="similar-header">
-              <h3 className="section-title">Похожие объявления</h3>
-              <Link to="/listings" className="btnGhost">
-                Смотреть все →
-              </Link>
-            </div>
-
-            {similar.length === 0 ? (
-              <div className="empty-state small">
-                <p className="muted">Нет похожих объявлений</p>
-              </div>
-            ) : (
+          {similar.length > 0 && (
+            <section className="similar-section">
+              <header className="similar-header">
+                <h3 className="section-title">🔥 Похожие объявления</h3>
+                <Link to="/listings" className="similar-link">
+                  Все <span className="link-arrow">→</span>
+                </Link>
+              </header>
               <div className="similar-grid">
-                {similar.map((x) => {
+                {similar.map((x, index) => {
                   const xViews = x?.stats?.views ?? x?.views ?? 0;
                   const xPlan = String(x.plan || "base").toLowerCase();
                   
                   return (
                     <Link key={x.id} to={`/listing/${x.id}`} className="similar-card">
-                      <div className="similar-image">
+                      <div className="similar-card-image">
                         {x.photos?.[0] ? (
-                          <img src={x.photos[0]} alt={x.title || ""} />
+                          <img src={x.photos[0]} alt={x.title || ""} className="similar-image" />
                         ) : (
-                          <div className="image-placeholder">📷</div>
+                          <div className="similar-placeholder">📷</div>
                         )}
-                        <span className={`badge-mini ${xPlan}`}>
-                          {xPlan === "vip" ? "VIP" : xPlan === "top" ? "TOP" : ""}
-                        </span>
+                        {xPlan !== "base" && (
+                          <span className={`similar-badge badge-${xPlan}`}>
+                            {xPlan === "vip" ? "VIP" : "TOP"}
+                          </span>
+                        )}
                       </div>
-                      <div className="similar-content">
+                      <div className="similar-card-content">
                         <h4 className="similar-title">{x.title || "—"}</h4>
-                        <p className="similar-price">{formatPrice(x.price)} TJS</p>
+                        <p className="similar-price">{formatPrice(x.price)}</p>
                         <div className="similar-meta">
-                          <span>{x.city || "—"}</span>
-                          <span>👁 {xViews}</span>
+                          <span className="similar-city">📍 {x.city || "—"}</span>
+                          <span className="similar-views">👁 {xViews}</span>
                         </div>
                       </div>
                     </Link>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </section>
+          )}
         </div>
 
-        {/* Правая колонка - контакты и действия */}
+        {/* Правая колонка */}
         <aside className="detail-sidebar">
-          <div className="card contact-card sticky">
-            <div className="contact-header">
-              <div>
-                <div className="muted small">Цена</div>
-                <div className="contact-price">{formatPrice(item.price)} TJS</div>
-              </div>
-              <span className={`badge-plan ${plan}`}>
-                {plan === "vip" ? "VIP" : plan === "top" ? "TOP" : "Базовый"}
-              </span>
-            </div>
-
-            <div className="divider" />
-
-            <div className="contact-stats">
-              <div className="stat-row" onClick={() => navigate(`/city/${item.city}`)}>
-                <span className="muted">📍 Город</span>
-                <span className="stat-value clickable">{item.city || "—"}</span>
-              </div>
-              <div className="stat-row" onClick={() => navigate(`/category/${item.category}`)}>
-                <span className="muted">📦 Категория</span>
-                <span className="stat-value clickable">{item.category || "—"}</span>
-              </div>
-              <div className="stat-row">
-                <span className="muted">👁 Просмотры</span>
-                <span className="stat-value">{views.toLocaleString()}</span>
-              </div>
-              {createdLabel && (
-                <div className="stat-row">
-                  <span className="muted">📅 Опубликовано</span>
-                  <span className="stat-value">{createdLabel}</span>
+          <div className="sidebar-sticky">
+            {/* Контактная карточка */}
+            <div className="contact-card">
+              <div className="contact-header">
+                <div className="contact-price">
+                  <span className="price-label">Цена</span>
+                  <span className="price-value">{formatPrice(item.price)}</span>
                 </div>
-              )}
-            </div>
-
-            <div className="divider" />
-
-            {/* Контактные кнопки с отображением номеров */}
-            <div className="contact-actions">
-              {hasPhone ? (
-                <button className="btnPrimary contact-btn" type="button" onClick={handleCall}>
-                  <span className="btn-icon">📞</span>
-                  <div className="contact-btn-content">
-                    <span>Позвонить</span>
-                    <span className="contact-number">{formatPhone(sellerProfile?.phone)}</span>
-                  </div>
-                </button>
-              ) : null}
-
-              {hasWhatsApp ? (
-                <button className="btn-success contact-btn" type="button" onClick={handleWhatsApp}>
-                  <span className="btn-icon">💬</span>
-                  <div className="contact-btn-content">
-                    <span>WhatsApp</span>
-                    <span className="contact-number">{formatPhone(sellerProfile?.whatsapp)}</span>
-                  </div>
-                </button>
-              ) : null}
-
-              {hasEmail ? (
-                <button className="btn-secondary contact-btn" type="button" onClick={handleEmail}>
-                  <span className="btn-icon">✉️</span>
-                  <div className="contact-btn-content">
-                    <span>Написать</span>
-                    <span className="contact-number">{sellerProfile?.email}</span>
-                  </div>
-                </button>
-              ) : null}
-              
-              {/* Если нет ни одного контакта, показываем сообщение */}
-              {!hasPhone && !hasWhatsApp && !hasEmail && (
-                <div className="no-contacts">
-                  <p className="muted small">Контакты продавца не указаны</p>
+                <div className={`contact-badge badge-${plan}`}>
+                  {plan === "vip" ? "⭐ VIP" : plan === "top" ? "🔥 TOP" : "📋 Базовый"}
                 </div>
-              )}
+              </div>
 
-              {/* Кнопка для показа дополнительных действий */}
-              <button 
-                className="btn-ghost contact-btn" 
-                type="button" 
-                onClick={handleShowAllContacts}
-              >
-                <span className="btn-icon">📋</span>
-                <div className="contact-btn-content">
+              <div className="contact-stats">
+                <div className="stat-item" onClick={() => navigate(`/city/${item.city}`)}>
+                  <span className="stat-icon">📍</span>
+                  <div className="stat-content">
+                    <span className="stat-label">Город</span>
+                    <span className="stat-value stat-clickable">{item.city || "—"}</span>
+                  </div>
+                </div>
+                <div className="stat-item" onClick={() => navigate(`/category/${item.category}`)}>
+                  <span className="stat-icon">📦</span>
+                  <div className="stat-content">
+                    <span className="stat-label">Категория</span>
+                    <span className="stat-value stat-clickable">{item.category || "—"}</span>
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-icon">👁</span>
+                  <div className="stat-content">
+                    <span className="stat-label">Просмотры</span>
+                    <span className="stat-value">{views.toLocaleString()}</span>
+                  </div>
+                </div>
+                {createdLabel && (
+                  <div className="stat-item">
+                    <span className="stat-icon">📅</span>
+                    <div className="stat-content">
+                      <span className="stat-label">Опубликовано</span>
+                      <span className="stat-value">{createdLabel}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="contact-actions">
+                {hasPhone && (
+                  <button className="action-btn action-call" onClick={handleCall}>
+                    <span className="action-icon">📞</span>
+                    <div className="action-content">
+                      <span className="action-label">Позвонить</span>
+                      <span className="action-detail">{formatPhone(sellerProfile?.phone)}</span>
+                    </div>
+                  </button>
+                )}
+
+                {hasWhatsApp && (
+                  <button className="action-btn action-whatsapp" onClick={handleWhatsApp}>
+                    <span className="action-icon">💬</span>
+                    <div className="action-content">
+                      <span className="action-label">WhatsApp</span>
+                      <span className="action-detail">{formatPhone(sellerProfile?.whatsapp)}</span>
+                    </div>
+                  </button>
+                )}
+
+                {hasEmail && (
+                  <button className="action-btn action-email" onClick={handleEmail}>
+                    <span className="action-icon">✉️</span>
+                    <div className="action-content">
+                      <span className="action-label">Email</span>
+                      <span className="action-detail">{sellerProfile?.email}</span>
+                    </div>
+                  </button>
+                )}
+                
+                {!hasPhone && !hasWhatsApp && !hasEmail && (
+                  <div className="no-contacts">
+                    <p>Контакты продавца не указаны</p>
+                  </div>
+                )}
+
+                <button 
+                  className="action-btn action-more" 
+                  onClick={handleShowAllContacts}
+                >
+                  <span className="action-icon">📋</span>
                   <span>{showContactInfo ? 'Скрыть' : 'Все действия'}</span>
+                </button>
+
+                {showContactInfo && (
+                  <div className="more-actions">
+                    <button className="more-action" onClick={handleWishlist}>
+                      <span className="more-icon">{inWishlist ? '❤️' : '🤍'}</span>
+                      <span>{inWishlist ? 'В избранном' : 'В избранное'}</span>
+                    </button>
+                    <button className="more-action" onClick={handleReport}>
+                      <span className="more-icon">⚠️</span>
+                      <span>Пожаловаться</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="safety-notes">
+                <div className="safety-note">
+                  <span className="note-icon">🔒</span>
+                  <span className="note-text">Безопасная сделка</span>
                 </div>
-              </button>
-
-              {showContactInfo && (
-                <>
-                  <button className="btn-ghost contact-btn" type="button" onClick={handleWishlist}>
-                    <span className="btn-icon">{inWishlist ? '❤️' : '🤍'}</span>
-                    {inWishlist ? 'В избранном' : 'В избранное'}
-                  </button>
-                  
-                  <button className="btn-ghost contact-btn" type="button" onClick={handleReport}>
-                    <span className="btn-icon">⚠️</span>
-                    Пожаловаться
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="contact-note muted small">
-              <p>🔒 Безопасная сделка</p>
-              <p>⚠️ Не переводите деньги до осмотра товара</p>
-              <p>📱 ID: {item.id?.slice(-6) || "—"}</p>
+                <div className="safety-note note-warning">
+                  <span className="note-icon">⚠️</span>
+                  <span className="note-text">Не переводите деньги до осмотра</span>
+                </div>
+                <div className="safety-note note-id">
+                  <span className="note-icon">📱</span>
+                  <span className="note-text">ID: {item.id?.slice(-6) || "—"}</span>
+                </div>
+              </div>
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Модальное окно полной галереи */}
+      {/* Полная галерея */}
       {showFullGallery && (
-        <div className="modal-overlay" onClick={() => setShowFullGallery(false)}>
-          <div className="full-gallery" onClick={(e) => e.stopPropagation()}>
-            <button className="gallery-close" onClick={() => setShowFullGallery(false)}>
+        <div className="gallery-modal" onClick={() => setShowFullGallery(false)}>
+          <div className="gallery-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="gallery-modal-close" onClick={() => setShowFullGallery(false)}>
               ✕
             </button>
-            <div className="full-gallery-content">
-              <img src={currentImage} alt={item.title} />
-              {photos.length > 1 && (
-                <>
-                  <button className="gallery-nav-large prev" onClick={prevImage}>
-                    ←
-                  </button>
-                  <button className="gallery-nav-large next" onClick={nextImage}>
-                    →
-                  </button>
-                </>
-              )}
-            </div>
-            <div className="full-gallery-counter">
+            <img src={currentImage} alt={item.title} className="gallery-modal-image" />
+            {photos.length > 1 && (
+              <>
+                <button className="gallery-modal-nav modal-prev" onClick={prevImage}>
+                  ←
+                </button>
+                <button className="gallery-modal-nav modal-next" onClick={nextImage}>
+                  →
+                </button>
+              </>
+            )}
+            <div className="gallery-modal-counter">
               {selectedImageIndex + 1} / {photos.length}
             </div>
           </div>

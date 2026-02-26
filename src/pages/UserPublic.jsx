@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { db } from "../firebase/firebase.js";
 import ListingCard from "../components/ListingCard.jsx";
 import { getUserProfile, listUserListings } from "../firebase/users.js";
 
@@ -45,6 +47,7 @@ export default function UserPublic() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("newest");
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [error, setError] = useState(null);
 
   const stats = useMemo(() => {
     const total = items.length;
@@ -76,21 +79,43 @@ export default function UserPublic() {
   }, [items, sortBy]);
 
   useEffect(() => {
-    (async () => {
+    const fetchUserData = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
-        const p = await getUserProfile(uid);
-        setProfile(p);
+        console.log("Загружаем профиль для UID:", uid);
         
-        const res = await listUserListings(uid, 200);
-        setItems(res);
+        // 1. Загружаем профиль пользователя
+        const profileData = await getUserProfile(uid);
+        console.log("Профиль загружен:", profileData);
+        
+        if (!profileData) {
+          setError("Пользователь не найден");
+          setLoading(false);
+          return;
+        }
+        
+        setProfile(profileData);
+        
+        // 2. Загружаем объявления пользователя
+        console.log("Загружаем объявления для UID:", uid);
+        const listingsData = await listUserListings(uid, 200);
+        console.log("Объявления загружены:", listingsData.length);
+        setItems(listingsData);
+        
       } catch (error) {
         console.error("Ошибка загрузки профиля:", error);
+        setError(error.message || "Не удалось загрузить профиль");
         showNotification("error", "Не удалось загрузить профиль");
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    if (uid) {
+      fetchUserData();
+    }
   }, [uid]);
 
   const showNotification = (type, message) => {
@@ -146,13 +171,13 @@ export default function UserPublic() {
     );
   }
 
-  if (!profile) {
+  if (error || !profile) {
     return (
       <div className="user-public-page">
         <div className="error-state">
           <div className="error-icon">👤</div>
           <h2>Профиль не найден</h2>
-          <p>Пользователь с таким ID не существует</p>
+          <p>{error || "Пользователь с таким ID не существует"}</p>
           <Link to="/" className="btn-primary">На главную</Link>
         </div>
       </div>

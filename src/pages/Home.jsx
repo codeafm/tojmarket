@@ -216,7 +216,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="listings-grid">
+       <div className="home-listings-grid">
           {loading ? (
             renderSkeletons()
           ) : fresh.length > 0 ? (
