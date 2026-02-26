@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, Link } from "react-router-dom";
 import Header from "./components/Header.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserPublic from "./pages/UserPublic.jsx";
@@ -123,7 +123,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* 404 */}
+              {/* 404 - всегда в конце */}
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
@@ -137,11 +137,12 @@ export default function App() {
           <div className="footerRow">
             <div className="brandMini">TojMarket</div>
             <div className="footerLinks">
-              <a href="/about" className="footerLink muted small">О нас</a>
+              {/* Используем Link вместо a для внутренней навигации */}
+              <Link to="/about" className="footerLink muted small">О нас</Link>
               <span className="footerDivider">•</span>
-              <a href="/terms" className="footerLink muted small">Условия</a>
+              <Link to="/terms" className="footerLink muted small">Условия</Link>
               <span className="footerDivider">•</span>
-              <a href="/privacy" className="footerLink muted small">Конфиденциальность</a>
+              <Link to="/privacy" className="footerLink muted small">Конфиденциальность</Link>
             </div>
             <div className="muted small">
               © {new Date().getFullYear()} • Купи/Продай • v1.0.0
