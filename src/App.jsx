@@ -14,6 +14,11 @@ import Register from "./pages/Register.jsx";
 import VinCheck from "./pages/VinCheck.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
+// Новые страницы
+import About from "./pages/About.jsx";
+import Terms from "./pages/Terms.jsx";
+import Privacy from "./pages/Privacy.jsx";
+
 import "./App.css";
 
 export default function App() {
@@ -80,6 +85,11 @@ export default function App() {
               <Route path="/listing/:id" element={<ListingDetail />} />
               <Route path="/vin" element={<VinCheck />} />
               <Route path="/user/:id" element={<UserPublic />} />
+              
+              {/* Информационные страницы */}
+              <Route path="/about" element={<About />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
 
               {/* Защищенные маршруты */}
               <Route

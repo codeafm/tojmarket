@@ -1,7 +1,6 @@
 // src/pages/Listings.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import ListingCard from "../components/ListingCard.jsx";
+import { Link, useSearchParams } from "react-router-dom";
 import { CATEGORIES } from "../data/categorySchemas.js";
 import { listListings } from "../firebase/listings.js";
 
@@ -98,10 +97,37 @@ function writeExtraToSP(extra) {
   return out;
 }
 
-/** ======= UI components с современным дизайном ======= */
+// Форматирование цены
+const formatPrice = (price) => {
+  if (!price) return "—";
+  return new Intl.NumberFormat("ru-RU").format(price) + " TJS";
+};
+
+// Форматирование даты
+const formatDate = (timestamp) => {
+  if (!timestamp?.seconds) return "недавно";
+  const date = new Date(timestamp.seconds * 1000);
+  const now = new Date();
+  const diff = now - date;
+  
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (minutes < 60) return `${minutes} мин назад`;
+  if (hours < 24) return `${hours} ч назад`;
+  if (days < 7) return `${days} дн назад`;
+  
+  return date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "short",
+  });
+};
+
+/** ======= UI components с современным дизайном и анимациями ======= */
 function FilterSection({ title, children }) {
   return (
-    <div className="filter-section">
+    <div className="filter-section fade-in">
       <h4 className="filter-section-title">{title}</h4>
       <div className="filter-section-content">
         {children}
@@ -116,7 +142,7 @@ function SelectField({ label, value, onChange, options, placeholder = "Все" }
     <div className="filter-field">
       <label className="filter-label">{label}</label>
       <select 
-        className="filter-select" 
+        className="filter-select hover-lift" 
         value={value || ""} 
         onChange={(e) => onChange(e.target.value)}
       >
@@ -141,7 +167,7 @@ function DatalistField({ label, value, onChange, options, placeholder }) {
     <div className="filter-field">
       <label className="filter-label">{label}</label>
       <input
-        className="filter-input"
+        className="filter-input hover-lift"
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         list={listId}
@@ -162,14 +188,14 @@ function RangeField({ label, from, to, onFrom, onTo, phFrom = "от", phTo = "д
       <label className="filter-label">{label}</label>
       <div className="range-inputs">
         <input
-          className="filter-input"
+          className="filter-input hover-lift"
           value={from || ""}
           onChange={(e) => onFrom(e.target.value)}
           placeholder={phFrom}
         />
         <span className="range-separator">—</span>
         <input
-          className="filter-input"
+          className="filter-input hover-lift"
           value={to || ""}
           onChange={(e) => onTo(e.target.value)}
           placeholder={phTo}
@@ -177,18 +203,6 @@ function RangeField({ label, from, to, onFrom, onTo, phFrom = "от", phTo = "д
       </div>
     </div>
   );
-}
-
-function StatusBadge({ status }) {
-  const statusMap = {
-    vip: { class: "badge-vip", label: "VIP" },
-    top: { class: "badge-top", label: "TOP" },
-    base: { class: "badge-base", label: "Базовый" }
-  };
-  
-  const { class: className, label } = statusMap[status] || statusMap.base;
-  
-  return <span className={`badge ${className}`}>{label}</span>;
 }
 
 /** ======= Category filter definitions с улучшенным UI ======= */
@@ -479,12 +493,87 @@ function passExtraFilters(item, category, extra) {
     if (extra.rooms && String(ex?.rooms ?? "") !== String(extra.rooms)) return false;
     if (!numBetween("area", extra.areaFrom, extra.areaTo)) return false;
     if (extra.repair && !textEqOrContains("repair", extra.repair)) return false;
-    if (extra.floor && String(ex?.floor ?? "") !== String(extra.floor)) return false;
+    if (extra.floor && String(ex?.floor ?? "") !== String(extra.rooms)) return false;
     return true;
   }
 
   return true;
 }
+
+// Компонент красивой карточки
+const ModernListingCard = ({ item, index }) => {
+  const plan = String(item.plan || "base").toLowerCase();
+  const itemViews = item?.stats?.views ?? item?.views ?? 0;
+  
+  return (
+    <Link 
+      to={`/listing/${item.id}`} 
+      className="modern-listing-card"
+      style={{ animationDelay: `${index * 0.1}s` }}
+    >
+      <div className="card-image-wrapper">
+        {item.photos?.[0] ? (
+          <img 
+            src={item.photos[0]} 
+            alt={item.title} 
+            className="card-image"
+            loading="lazy"
+          />
+        ) : (
+          <div className="no-image-modern">
+            <span className="no-image-icon">📷</span>
+            <span className="no-image-text">Нет фото</span>
+          </div>
+        )}
+        
+        {plan !== "base" && (
+          <span className={`card-badge-modern ${plan}`}>
+            {plan === "vip" ? "⭐ VIP" : "🔥 TOP"}
+          </span>
+        )}
+        
+        <div className="card-price-modern">
+          {formatPrice(item.price)}
+        </div>
+      </div>
+      
+      <div className="card-content-modern">
+        <h3 className="card-title-modern">{item.title || "Без названия"}</h3>
+        
+        <div className="card-location-modern">
+          <span className="location-icon">📍</span>
+          <span className="location-text">{item.city || "Город не указан"}</span>
+        </div>
+        
+        <div className="card-footer-modern">
+          <div className="card-time">
+            <span className="time-icon">⏱️</span>
+            <span className="time-text">{formatDate(item.createdAt)}</span>
+          </div>
+          <div className="card-views">
+            <span className="views-icon">👁</span>
+            <span className="views-text">{itemViews}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+// Скелетон для загрузки
+const SkeletonCard = () => (
+  <div className="skeleton-card-modern">
+    <div className="skeleton-image"></div>
+    <div className="skeleton-content">
+      <div className="skeleton-title"></div>
+      <div className="skeleton-price"></div>
+      <div className="skeleton-meta">
+        <div className="skeleton-location"></div>
+        <div className="skeleton-time"></div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function Listings() {
   const [sp, setSp] = useSearchParams();
@@ -501,6 +590,13 @@ export default function Listings() {
   const [rawItems, setRawItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+
+  // Функция для показа уведомлений
+  const showNotification = useCallback((type, message) => {
+    setNotification({ show: true, type, message });
+    setTimeout(() => setNotification({ show: false, type: "", message: "" }), 3000);
+  }, []);
 
   useEffect(() => {
     setQText(sp.get("q") || "");
@@ -531,6 +627,10 @@ export default function Listings() {
     try {
       const res = await listListings(p);
       setRawItems(res || []);
+      showNotification("success", `Загружено ${res?.length || 0} объявлений`);
+    } catch (error) {
+      console.error("Ошибка загрузки:", error);
+      showNotification("error", "Ошибка загрузки объявлений");
     } finally {
       setLoading(false);
     }
@@ -616,7 +716,8 @@ export default function Listings() {
     setSp(p);
     load(baseParams);
     setShowMobileFilters(false);
-  }, [qText, category, city, priceFrom, priceTo, status, sort, extra, baseParams, setSp]);
+    showNotification("success", "Фильтры применены");
+  }, [qText, category, city, priceFrom, priceTo, status, sort, extra, baseParams, setSp, showNotification]);
 
   const resetFilters = useCallback(() => {
     setQText("");
@@ -629,26 +730,38 @@ export default function Listings() {
     setExtra({});
     setSp({});
     load({ sort: "new", limit: 400 });
-  }, [setSp]);
+    showNotification("info", "Фильтры сброшены");
+  }, [setSp, showNotification]);
 
   return (
-    <div className="listings-page">
+    <div className="listings-page fade-in">
+      {/* Уведомления */}
+      {notification.show && (
+        <div className={`notification ${notification.type} slide-in-right`}>
+          <span className="notification-icon">
+            {notification.type === "success" ? "✅" : 
+             notification.type === "error" ? "❌" : "ℹ️"}
+          </span>
+          <span className="notification-message">{notification.message}</span>
+        </div>
+      )}
+
       {/* Шапка страницы */}
-      <div className="pageHead">
+      <div className="pageHead slide-in-right">
         <div className="pageHead-left">
-          <h1 className="pageTitle">Объявления</h1>
+          <h1 className="pageTitle gradient-text">Объявления</h1>
           <p className="pageSubtitle">
             {loading ? "Загрузка..." : `Найдено ${items.length} объявлений`}
           </p>
         </div>
         <button 
-          className="btnSecondary mobile-filter-btn"
+          className="btnSecondary mobile-filter-btn hover-lift"
           onClick={() => setShowMobileFilters(!showMobileFilters)}
         >
           <span className="filter-icon">🔍</span>
           <span>Фильтры</span>
           {Object.keys(extra).length > 0 && (
-            <span className="filter-badge">{Object.keys(extra).length}</span>
+            <span className="filter-badge pulse">{Object.keys(extra).length}</span>
           )}
         </button>
       </div>
@@ -656,11 +769,11 @@ export default function Listings() {
       <div className="listings-layout">
         {/* Фильтры - десктоп */}
         <aside className={`filters-sidebar ${showMobileFilters ? 'mobile-show' : ''}`}>
-          <div className="filters-card card">
+          <div className="filters-card card slide-in-left">
             <div className="filters-header">
               <h3 className="filters-title">Фильтры</h3>
               {(Object.keys(extra).length > 0 || qText || city || priceFrom || priceTo || status !== "all") && (
-                <button className="btnGhost btn-sm" onClick={resetFilters}>
+                <button className="btnGhost btn-sm hover-lift" onClick={resetFilters}>
                   Сбросить все
                 </button>
               )}
@@ -672,7 +785,7 @@ export default function Listings() {
                 <div className="filter-field">
                   <label className="filter-label">Ключевое слово</label>
                   <input
-                    className="filter-input"
+                    className="filter-input hover-lift"
                     value={qText}
                     onChange={(e) => setQText(e.target.value)}
                     placeholder="iPhone, Toyota..."
@@ -684,7 +797,7 @@ export default function Listings() {
               <FilterSection title="Категория">
                 <div className="filter-field">
                   <select 
-                    className="filter-select"
+                    className="filter-select hover-lift"
                     value={category} 
                     onChange={(e) => setCategory(e.target.value)}
                   >
@@ -702,7 +815,7 @@ export default function Listings() {
               <FilterSection title="Город">
                 <div className="filter-field">
                   <input
-                    className="filter-input"
+                    className="filter-input hover-lift"
                     value={city} 
                     onChange={(e) => setCity(e.target.value)} 
                     placeholder="Душанбе, Худжанд..."
@@ -715,14 +828,14 @@ export default function Listings() {
                 <div className="filter-range">
                   <div className="range-inputs">
                     <input
-                      className="filter-input"
+                      className="filter-input hover-lift"
                       value={priceFrom} 
                       onChange={(e) => setPriceFrom(e.target.value)}
                       placeholder="от"
                     />
                     <span className="range-separator">—</span>
                     <input
-                      className="filter-input"
+                      className="filter-input hover-lift"
                       value={priceTo} 
                       onChange={(e) => setPriceTo(e.target.value)}
                       placeholder="до"
@@ -735,7 +848,7 @@ export default function Listings() {
               <FilterSection title="Статус">
                 <div className="filter-field">
                   <select 
-                    className="filter-select"
+                    className="filter-select hover-lift"
                     value={status} 
                     onChange={(e) => setStatus(e.target.value)}
                   >
@@ -751,7 +864,7 @@ export default function Listings() {
               <FilterSection title="Сортировка">
                 <div className="filter-field">
                   <select 
-                    className="filter-select"
+                    className="filter-select hover-lift"
                     value={sort} 
                     onChange={(e) => setSort(e.target.value)}
                   >
@@ -772,10 +885,12 @@ export default function Listings() {
 
               {/* Кнопки действий */}
               <div className="filters-actions">
-                <button className="btnPrimary" onClick={applyFilters}>
-                  Применить фильтры
+                <button className="btnPrimary hover-lift" onClick={applyFilters}>
+                  <span className="btn-icon">✓</span>
+                  Применить
                 </button>
-                <button className="btnGhost" onClick={resetFilters}>
+                <button className="btnGhost hover-lift" onClick={resetFilters}>
+                  <span className="btn-icon">↺</span>
                   Сбросить
                 </button>
               </div>
@@ -786,33 +901,32 @@ export default function Listings() {
         {/* Список объявлений */}
         <div className="listings-content">
           {loading ? (
-            <div className="loading-state">
-              <div className="loading-spinner" />
-              <p>Загрузка объявлений...</p>
+            <div className="loading-grid">
+              {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
             </div>
           ) : items.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3>Ничего не найдено</h3>
-              <p>Попробуйте изменить параметры поиска</p>
-              <button className="btnPrimary" onClick={resetFilters}>
+            <div className="empty-state fade-in">
+              <div className="empty-icon bounce">🔍</div>
+              <h3 className="slide-up">Ничего не найдено</h3>
+              <p className="slide-up">Попробуйте изменить параметры поиска</p>
+              <button className="btnPrimary hover-lift slide-up" onClick={resetFilters}>
                 Сбросить фильтры
               </button>
             </div>
           ) : (
             <>
-              <div className="results-info">
+              <div className="results-info slide-in-right">
                 <span className="results-count">
                   Показано {items.length} из {rawItems.length} объявлений
                 </span>
                 <div className="results-views">
-                  <button className="view-btn active">🔲</button>
-                  <button className="view-btn">🔳</button>
+                  <button className="view-btn active hover-scale">🔲</button>
+                  <button className="view-btn hover-scale">🔳</button>
                 </div>
               </div>
-              <div className="cardsGrid">
-                {items.map((item) => (
-                  <ListingCard key={item.id} item={item} />
+              <div className="modern-listings-grid">
+                {items.map((item, index) => (
+                  <ModernListingCard key={item.id} item={item} index={index} />
                 ))}
               </div>
             </>

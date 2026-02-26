@@ -7,6 +7,8 @@ import {
 } from "../firebase/listings.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getUserProfile } from "../firebase/users.js";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase/firebase.js";
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -23,9 +25,6 @@ export default function ListingDetail() {
   const [inWishlist, setInWishlist] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
   const [showContactInfo, setShowContactInfo] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [zoomImage, setZoomImage] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [actionFeedback, setActionFeedback] = useState({ show: false, action: "", success: false });
 
   const views = useMemo(() => item?.stats?.views ?? item?.views ?? 0, [item]);
@@ -49,24 +48,64 @@ export default function ListingDetail() {
   }, []);
 
   const formatPhone = useCallback((phone) => {
-    if (!phone) return "";
+    if (!phone) return "Не указан";
+    if (phone.includes('+')) return phone;
+    
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length === 12) {
       return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "+$1 ($2) $3-$4-$5");
     } else if (cleaned.length === 11) {
       return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1 ($2) $3-$4-$5");
+    } else if (cleaned.length === 10) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "+7 ($1) $2-$3-$4");
     }
     return phone;
   }, []);
 
+  const getCleanPhone = useCallback((phone) => {
+    if (!phone) return "";
+    return phone.replace(/\D/g, "");
+  }, []);
+
   // Получение данных продавца
   const fetchSellerProfile = useCallback(async (sellerId) => {
-    if (!sellerId) return;
+    if (!sellerId) return null;
+    
     try {
+      console.log("Загружаем профиль продавца с ID:", sellerId);
+      
       const profile = await getUserProfile(sellerId);
-      setSellerProfile(profile);
+      
+      if (profile) {
+        console.log("Профиль загружен через getUserProfile:", profile);
+        setSellerProfile(profile);
+        return profile;
+      }
+      
+      const sellerRef = doc(db, "users", sellerId);
+      const sellerSnap = await getDoc(sellerRef);
+      
+      if (sellerSnap.exists()) {
+        const sellerData = sellerSnap.data();
+        console.log("Профиль загружен прямым запросом:", sellerData);
+        
+        const profileData = {
+          name: sellerData.username || sellerData.displayName || sellerData.name || "Продавец",
+          phone: sellerData.phone || "",
+          whatsapp: sellerData.whatsapp || sellerData.phone || "",
+          email: sellerData.email || "",
+          verified: sellerData.verified || false,
+          rating: sellerData.rating || 0,
+          uid: sellerData.uid
+        };
+        
+        setSellerProfile(profileData);
+        return profileData;
+      }
+      return null;
     } catch (error) {
       console.error("Ошибка загрузки профиля продавца:", error);
+      return null;
     }
   }, []);
 
@@ -76,7 +115,9 @@ export default function ListingDetail() {
     (async () => {
       setLoading(true);
       try {
+        console.log("Загружаем объявление с ID:", id);
         const data = await getListing(id);
+        console.log("Полученные данные объявления:", data);
 
         if (!alive) return;
 
@@ -91,8 +132,20 @@ export default function ListingDetail() {
         setCurrentImage(data?.photos?.[0] || null);
         
         // Загружаем профиль продавца
-        if (data.sellerId) {
-          fetchSellerProfile(data.sellerId);
+        const sellerId = data.ownerId || data.ownerUid || data.sellerId;
+        console.log("sellerId для загрузки:", sellerId);
+        
+        if (sellerId) {
+          await fetchSellerProfile(sellerId);
+        } else {
+          console.log("Нет sellerId, используем данные из объявления");
+          setSellerProfile({
+            name: data.ownerName || data.sellerName || "Продавец",
+            phone: data.ownerPhone || data.sellerPhone || "",
+            whatsapp: data.ownerWhatsApp || data.sellerWhatsApp || data.ownerPhone || data.sellerPhone || "",
+            email: data.ownerEmail || data.sellerEmail || "",
+            verified: false
+          });
         }
 
         if (data?.category) {
@@ -103,9 +156,8 @@ export default function ListingDetail() {
           setSimilar([]);
         }
 
-        incrementListingViews(id);
+        await incrementListingViews(id);
 
-        // Проверяем, есть ли в избранном
         if (user) {
           const wishlist = JSON.parse(localStorage.getItem(`wishlist_${user.uid}`) || "[]");
           setInWishlist(wishlist.includes(id));
@@ -129,7 +181,7 @@ export default function ListingDetail() {
     setTimeout(() => setNotification({ show: false, type: "", message: "" }), 3000);
   }, []);
 
-  // Функция для показа обратной связи о действии
+  // Функция для показа обратной связи
   const showActionFeedback = useCallback((action, success = true) => {
     setActionFeedback({ show: true, action, success });
     setTimeout(() => setActionFeedback({ show: false, action: "", success: false }), 2000);
@@ -141,49 +193,109 @@ export default function ListingDetail() {
     const newIndex = (selectedImageIndex + 1) % item.photos.length;
     setSelectedImageIndex(newIndex);
     setCurrentImage(item.photos[newIndex]);
-    showActionFeedback(`Фото ${newIndex + 1} из ${item.photos.length}`);
-  }, [item?.photos, selectedImageIndex, showActionFeedback]);
+  }, [item?.photos, selectedImageIndex]);
 
   const prevImage = useCallback(() => {
     if (!item?.photos?.length) return;
     const newIndex = (selectedImageIndex - 1 + item.photos.length) % item.photos.length;
     setSelectedImageIndex(newIndex);
     setCurrentImage(item.photos[newIndex]);
-    showActionFeedback(`Фото ${newIndex + 1} из ${item.photos.length}`);
-  }, [item?.photos, selectedImageIndex, showActionFeedback]);
+  }, [item?.photos, selectedImageIndex]);
 
-  // Обработчики кнопок
+  // Обработчики кнопок с улучшенной проверкой
   const handleCall = useCallback(() => {
-    const phone = sellerProfile?.phone || item?.sellerPhone;
-    if (phone) {
-      window.location.href = `tel:${phone.replace(/\D/g, "")}`;
-      showNotification("success", `📞 Звонок на номер ${formatPhone(phone)}`);
-      showActionFeedback("Звонок инициирован", true);
+    console.log("handleCall - sellerProfile:", sellerProfile);
+    
+    const phone = sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone || "";
+    
+    console.log("Телефон для звонка:", phone);
+    
+    if (phone && phone.trim() !== "") {
+      const cleanPhone = getCleanPhone(phone);
+      if (cleanPhone && cleanPhone.length >= 10) {
+        try {
+          window.location.href = `tel:${cleanPhone}`;
+          showNotification("success", `📞 Звонок на ${formatPhone(phone)}`);
+          showActionFeedback("Звонок инициирован", true);
+        } catch (error) {
+          console.error("Ошибка при звонке:", error);
+          showNotification("error", "❌ Не удалось совершить звонок");
+          showActionFeedback("Ошибка", false);
+        }
+      } else {
+        showNotification("error", "❌ Некорректный номер");
+        showActionFeedback("Ошибка", false);
+      }
     } else {
-      showNotification("error", "❌ Номер телефона не указан");
+      showNotification("error", "❌ Номер не указан");
       showActionFeedback("Нет номера", false);
     }
-  }, [sellerProfile, item, formatPhone, showNotification, showActionFeedback]);
+  }, [sellerProfile, item, formatPhone, getCleanPhone, showNotification, showActionFeedback]);
 
   const handleWhatsApp = useCallback(() => {
-    const phone = sellerProfile?.whatsapp || sellerProfile?.phone || item?.sellerPhone;
-    if (phone) {
-      const cleanPhone = phone.replace(/\D/g, "");
-      window.open(`https://wa.me/${cleanPhone}`, "_blank");
-      showNotification("success", "💬 WhatsApp открыт в новой вкладке");
-      showActionFeedback("WhatsApp открыт", true);
+    console.log("handleWhatsApp - sellerProfile:", sellerProfile);
+    
+    const phone = sellerProfile?.whatsapp || sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone || "";
+    
+    console.log("WhatsApp номер:", phone);
+    
+    if (phone && phone.trim() !== "") {
+      const cleanPhone = getCleanPhone(phone);
+      if (cleanPhone && cleanPhone.length >= 10) {
+        try {
+          // Пробуем открыть WhatsApp разными способами
+          const waUrl = `https://wa.me/${cleanPhone}`;
+          const waIntent = `whatsapp://send?phone=${cleanPhone}`;
+          
+          // Сначала пробуем открыть приложение
+          const win = window.open(waIntent, "_blank");
+          
+          // Если не получилось, открываем веб-версию
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            setTimeout(() => {
+              window.open(waUrl, "_blank");
+            }, 100);
+          }
+          
+          showNotification("success", "💬 WhatsApp открыт");
+          showActionFeedback("WhatsApp открыт", true);
+        } catch (error) {
+          console.error("Ошибка при открытии WhatsApp:", error);
+          window.open(`https://wa.me/${cleanPhone}`, "_blank");
+          showNotification("success", "💬 WhatsApp открыт в браузере");
+          showActionFeedback("WhatsApp открыт", true);
+        }
+      } else {
+        showNotification("error", "❌ Некорректный номер");
+        showActionFeedback("Ошибка", false);
+      }
     } else {
-      showNotification("error", "❌ Номер WhatsApp не указан");
+      showNotification("error", "❌ WhatsApp не указан");
       showActionFeedback("Нет WhatsApp", false);
     }
-  }, [sellerProfile, item, showNotification, showActionFeedback]);
+  }, [sellerProfile, item, getCleanPhone, showNotification, showActionFeedback]);
 
   const handleEmail = useCallback(() => {
-    const email = sellerProfile?.email || item?.sellerEmail;
-    if (email) {
-      window.location.href = `mailto:${email}?subject=Вопрос по объявлению: ${item?.title}&body=Здравствуйте! Меня интересует ваше объявление: ${window.location.href}`;
-      showNotification("success", `✉️ Email открыт для ${email}`);
-      showActionFeedback("Email открыт", true);
+    console.log("handleEmail - sellerProfile:", sellerProfile);
+    
+    const email = sellerProfile?.email || item?.ownerEmail || item?.sellerEmail || "";
+    
+    console.log("Email:", email);
+    
+    if (email && email.trim() !== "" && email.includes('@')) {
+      try {
+        const subject = encodeURIComponent(`Вопрос по объявлению: ${item?.title || "Объявление"}`);
+        const body = encodeURIComponent(
+          `Здравствуйте! Меня интересует ваше объявление:\n\n${window.location.href}\n\nСпасибо!`
+        );
+        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        showNotification("success", `✉️ Email: ${email}`);
+        showActionFeedback("Email открыт", true);
+      } catch (error) {
+        console.error("Ошибка при открытии email:", error);
+        showNotification("error", "❌ Не удалось открыть почтовый клиент");
+        showActionFeedback("Ошибка", false);
+      }
     } else {
       showNotification("error", "❌ Email не указан");
       showActionFeedback("Нет email", false);
@@ -192,7 +304,7 @@ export default function ListingDetail() {
 
   const handleWishlist = useCallback(() => {
     if (!user) {
-      showNotification("warning", "⚠️ Войдите, чтобы добавлять в избранное");
+      showNotification("warning", "⚠️ Войдите в аккаунт");
       showActionFeedback("Требуется вход", false);
       setTimeout(() => navigate("/login"), 2000);
       return;
@@ -206,113 +318,125 @@ export default function ListingDetail() {
       localStorage.setItem(wishlistKey, JSON.stringify(newWishlist));
       setInWishlist(false);
       showNotification("success", "❤️ Удалено из избранного");
-      showActionFeedback("Удалено из избранного", true);
+      showActionFeedback("Удалено", true);
     } else {
       wishlist.push(id);
       localStorage.setItem(wishlistKey, JSON.stringify(wishlist));
       setInWishlist(true);
       showNotification("success", "❤️ Добавлено в избранное");
-      showActionFeedback("Добавлено в избранное", true);
+      showActionFeedback("Добавлено", true);
     }
   }, [user, inWishlist, id, navigate, showNotification, showActionFeedback]);
 
   const handleShare = useCallback(() => {
+    const shareData = {
+      title: item?.title || "Объявление на TojMarket",
+      text: item?.description || "Посмотрите это объявление",
+      url: window.location.href,
+    };
+
     if (navigator.share) {
-      navigator.share({
-        title: item?.title,
-        text: item?.description,
-        url: window.location.href,
-      }).then(() => {
-        showNotification("success", "📤 Поделились успешно!");
-        showActionFeedback("Поделились", true);
-      }).catch(() => {
-        navigator.clipboard.writeText(window.location.href);
-        showNotification("success", "📋 Ссылка скопирована в буфер обмена");
-        showActionFeedback("Ссылка скопирована", true);
-      });
+      navigator.share(shareData)
+        .then(() => {
+          showNotification("success", "📤 Поделились успешно!");
+          showActionFeedback("Поделились", true);
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError') {
+            console.error("Ошибка при шаринге:", error);
+            copyToClipboard();
+          }
+        });
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      showNotification("success", "📋 Ссылка скопирована в буфер обмена");
-      showActionFeedback("Ссылка скопирована", true);
+      copyToClipboard();
+    }
+
+    function copyToClipboard() {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => {
+          showNotification("success", "📋 Ссылка скопирована");
+          showActionFeedback("Ссылка скопирована", true);
+        })
+        .catch(() => {
+          showNotification("error", "❌ Не удалось скопировать ссылку");
+          showActionFeedback("Ошибка", false);
+        });
     }
   }, [item, showNotification, showActionFeedback]);
 
   const handleContactSeller = useCallback(() => {
-    if (user) {
-      navigate(`/chat?seller=${item?.sellerId}&listing=${id}`);
-      showNotification("success", "💭 Чат открыт");
-      showActionFeedback("Чат открыт", true);
-    } else {
-      showNotification("warning", "⚠️ Войдите, чтобы написать продавцу");
-      showActionFeedback("Требуется вход", false);
-      setTimeout(() => navigate("/login"), 2000);
-    }
-  }, [user, item, id, navigate, showNotification, showActionFeedback]);
-
-  const handleViewSeller = useCallback(() => {
-    if (item?.sellerId) {
-      navigate(`/user/${item.sellerId}`);
-      showNotification("success", "👤 Профиль продавца открыт");
-      showActionFeedback("Профиль открыт", true);
-    } else {
-      showNotification("error", "❌ Информация о продавце недоступна");
-      showActionFeedback("Нет данных", false);
-    }
-  }, [item, navigate, showNotification, showActionFeedback]);
-
-  const handleFavorite = useCallback(() => {
+    const sellerId = item?.ownerId || item?.ownerUid || item?.sellerId;
+    
     if (!user) {
-      showNotification("warning", "⚠️ Войдите, чтобы добавить в избранное");
+      showNotification("warning", "⚠️ Войдите в аккаунт");
       showActionFeedback("Требуется вход", false);
       setTimeout(() => navigate("/login"), 2000);
       return;
     }
-    setIsFavorite(!isFavorite);
-    const message = isFavorite ? "Удалено из избранного" : "Добавлено в избранное";
-    showNotification(isFavorite ? "error" : "success", `❤️ ${message}`);
-    showActionFeedback(message, !isFavorite);
-  }, [user, isFavorite, navigate, showNotification, showActionFeedback]);
+    
+    if (sellerId) {
+      navigate(`/chat?seller=${sellerId}&listing=${id}`);
+      showNotification("success", "💭 Чат открыт");
+      showActionFeedback("Чат открыт", true);
+    } else {
+      showNotification("error", "❌ Информация о продавце недоступна");
+      showActionFeedback("Ошибка", false);
+    }
+  }, [user, item, id, navigate, showNotification, showActionFeedback]);
+
+  const handleViewSeller = useCallback(() => {
+    const sellerId = item?.ownerId || item?.ownerUid || item?.sellerId;
+    
+    if (sellerId) {
+      navigate(`/user/${sellerId}`);
+      showNotification("success", "👤 Профиль продавца открыт");
+      showActionFeedback("Профиль открыт", true);
+    } else {
+      showNotification("error", "❌ Информация о продавце недоступна");
+      showActionFeedback("Ошибка", false);
+    }
+  }, [item, navigate, showNotification, showActionFeedback]);
 
   const handleReport = useCallback(() => {
     showNotification("success", "⚠️ Жалоба отправлена модератору");
     showActionFeedback("Жалоба отправлена", true);
   }, [showNotification, showActionFeedback]);
 
-  const handleImageZoom = useCallback((e) => {
-    if (!zoomImage) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setMousePosition({ x, y });
-  }, [zoomImage]);
+  const handleShowAllContacts = useCallback(() => {
+    setShowContactInfo(!showContactInfo);
+  }, [showContactInfo]);
+
+  const hasPhone = !!(sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone);
+  const hasWhatsApp = !!(sellerProfile?.whatsapp || sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone);
+  const hasEmail = !!(sellerProfile?.email || item?.ownerEmail || item?.sellerEmail);
 
   if (loading) {
     return (
-      <div className="loading-state fade-in">
+      <div className="loading-state">
         <div className="loading-spinner" />
-        <p className="slide-up">Загружаем объявление...</p>
+        <p>Загружаем объявление...</p>
       </div>
     );
   }
 
-  if (!item) return <div className="empty-state fade-in">Загрузка…</div>;
+  if (!item) return <div className="empty-state">Загрузка…</div>;
   if (item._missing) {
     return (
-      <div className="empty-state fade-in">
-        <div className="empty-icon bounce">🔍</div>
-        <h3 className="slide-up">Объявление не найдено</h3>
-        <p className="slide-up">Возможно, оно было удалено или никогда не существовало</p>
-        <Link to="/listings" className="btnPrimary slide-up">Вернуться к списку</Link>
+      <div className="empty-state">
+        <div className="empty-icon">🔍</div>
+        <h3>Объявление не найдено</h3>
+        <p>Возможно, оно было удалено или никогда не существовало</p>
+        <Link to="/listings" className="btnPrimary">Вернуться к списку</Link>
       </div>
     );
   }
   if (item._error) {
     return (
-      <div className="empty-state fade-in">
-        <div className="empty-icon shake">⚠️</div>
-        <h3 className="slide-up">Ошибка загрузки</h3>
-        <p className="slide-up">Не удалось загрузить объявление. Попробуйте позже</p>
-        <button onClick={() => window.location.reload()} className="btnPrimary slide-up">
+      <div className="empty-state">
+        <div className="empty-icon">⚠️</div>
+        <h3>Ошибка загрузки</h3>
+        <p>Не удалось загрузить объявление. Попробуйте позже</p>
+        <button onClick={() => window.location.reload()} className="btnPrimary">
           Обновить
         </button>
       </div>
@@ -324,10 +448,10 @@ export default function ListingDetail() {
   const hasSpecs = item.attrs && Object.keys(item.attrs).length > 0;
 
   return (
-    <div className="listing-detail-page fade-in">
-      {/* Уведомления в правом верхнем углу */}
+    <div className="listing-detail-page">
+      {/* Уведомления */}
       {notification.show && (
-        <div className={`notification ${notification.type} slide-in-right`}>
+        <div className={`notification ${notification.type}`}>
           <span className="notification-icon">
             {notification.type === "success" ? "✅" : 
              notification.type === "error" ? "❌" : 
@@ -337,27 +461,25 @@ export default function ListingDetail() {
         </div>
       )}
 
-      {/* Временная обратная связь на кнопке */}
+      {/* Обратная связь на кнопке */}
       {actionFeedback.show && (
-        <div className={`action-feedback ${actionFeedback.success ? 'success' : 'error'} slide-up`}>
-          <span className="feedback-icon">
-            {actionFeedback.success ? '✓' : '✗'}
-          </span>
+        <div className={`action-feedback ${actionFeedback.success ? 'success' : 'error'}`}>
+          <span className="feedback-icon">{actionFeedback.success ? '✓' : '✗'}</span>
           <span className="feedback-message">{actionFeedback.action}</span>
         </div>
       )}
 
       {/* Верхняя навигация */}
-      <div className="detail-navigation slide-in-right">
-        <button onClick={() => navigate(-1)} className="btnGhost hover-lift">
+      <div className="detail-navigation">
+        <button onClick={() => navigate(-1)} className="btnGhost">
           ← Назад
         </button>
         <div className="detail-breadcrumbs muted small">
-          <Link to={`/category/${item.category}`} className="breadcrumb-link hover-underline">
+          <Link to={`/category/${item.category}`} className="breadcrumb-link">
             {item.category || "—"}
           </Link>
           <span className="separator">•</span>
-          <span className="hover-lift">{item.city || "—"}</span>
+          <span>{item.city || "—"}</span>
           {createdLabel && (
             <>
               <span className="separator">•</span>
@@ -365,16 +487,11 @@ export default function ListingDetail() {
             </>
           )}
           <span className="separator">•</span>
-          <span className="views-count pulse">
-            <span className="views-icon">👁</span> {views.toLocaleString()}
-          </span>
+          <span className="views-count">👁 {views.toLocaleString()}</span>
         </div>
         <div className="detail-actions">
-          <button onClick={handleShare} className="btn-icon iconBtn hover-scale" title="Поделиться">
+          <button onClick={handleShare} className="btn-icon iconBtn" title="Поделиться">
             📤
-          </button>
-          <button onClick={handleFavorite} className="btn-icon iconBtn hover-scale" title="В избранное">
-            {isFavorite ? '❤️' : '🤍'}
           </button>
         </div>
       </div>
@@ -383,60 +500,48 @@ export default function ListingDetail() {
         {/* Левая колонка - основная информация */}
         <div className="detail-main">
           {/* Галерея */}
-          <div className="card gallery-card slide-in-right" style={{ animationDelay: '0.1s' }}>
-            <div 
-              className="gallery-main" 
-              onMouseMove={handleImageZoom}
-              onMouseLeave={() => setZoomImage(false)}
-            >
+          <div className="card gallery-card">
+            <div className="gallery-main">
               {currentImage ? (
-                <div className={`image-zoom-container ${zoomImage ? 'zoomed' : ''}`}>
-                  <img 
-                    src={currentImage} 
-                    alt={item.title || "Фото"} 
-                    onClick={() => setShowFullGallery(true)}
-                    className={`gallery-main-image ${zoomImage ? 'zoomed' : ''}`}
-                    style={zoomImage ? {
-                      transform: `scale(2)`,
-                      transformOrigin: `${mousePosition.x}% ${mousePosition.y}%`
-                    } : {}}
-                    onMouseEnter={() => setZoomImage(true)}
-                  />
-                </div>
+                <img 
+                  src={currentImage} 
+                  alt={item.title || "Фото"} 
+                  onClick={() => setShowFullGallery(true)}
+                  className="gallery-main-image"
+                />
               ) : (
                 <div className="gallery-placeholder">
-                  <span className="bounce">📷</span>
+                  <span>📷</span>
                   <p>Нет фото</p>
                 </div>
               )}
 
               {photos.length > 1 && (
                 <>
-                  <button className="gallery-nav prev hover-scale" onClick={prevImage}>
+                  <button className="gallery-nav prev" onClick={prevImage}>
                     ←
                   </button>
-                  <button className="gallery-nav next hover-scale" onClick={nextImage}>
+                  <button className="gallery-nav next" onClick={nextImage}>
                     →
                   </button>
                 </>
               )}
 
-              <span className={`badge-plan ${plan} slide-in-left`}>
+              <span className={`badge-plan ${plan}`}>
                 {plan === "vip" ? "VIP" : plan === "top" ? "TOP" : "Базовый"}
               </span>
             </div>
 
             {photos.length > 1 && (
-              <div className="gallery-thumbs fade-in">
+              <div className="gallery-thumbs">
                 {photos.map((photo, index) => (
                   <button
                     key={index}
-                    className={`gallery-thumb hover-scale ${index === selectedImageIndex ? "active" : ""}`}
+                    className={`gallery-thumb ${index === selectedImageIndex ? "active" : ""}`}
                     onClick={() => {
                       setSelectedImageIndex(index);
                       setCurrentImage(photo);
                     }}
-                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     <img src={photo} alt={`Фото ${index + 1}`} />
                   </button>
@@ -446,16 +551,16 @@ export default function ListingDetail() {
           </div>
 
           {/* Информация о товаре */}
-          <div className="card detail-info slide-in-right" style={{ animationDelay: '0.2s' }}>
+          <div className="card detail-info">
             <div className="detail-header">
-              <h1 className="detail-title gradient-text">{item.title || "—"}</h1>
+              <h1 className="detail-title">{item.title || "—"}</h1>
             </div>
 
             <div className="detail-price-section">
-              <div className="detail-price pulse-slow">{formatPrice(item.price)} TJS</div>
+              <div className="detail-price">{formatPrice(item.price)} TJS</div>
               <div className="detail-meta">
-                <span className="meta-chip hover-lift">📍 {item.city || "—"}</span>
-                <span className="meta-chip hover-lift">📦 {item.category || "—"}</span>
+                <span className="meta-chip">📍 {item.city || "—"}</span>
+                <span className="meta-chip">📦 {item.category || "—"}</span>
               </div>
             </div>
 
@@ -464,19 +569,24 @@ export default function ListingDetail() {
             {/* Информация о продавце */}
             <div className="detail-section seller-info">
               <h3 className="section-title">Продавец</h3>
-              <div className="seller-card hover-lift">
+              <div className="seller-card">
                 <div className="seller-avatar" onClick={handleViewSeller}>
-                  {sellerProfile?.name?.[0] || item.sellerName?.[0] || "?"}
+                  {sellerProfile?.name?.[0] || item.ownerName?.[0] || item.sellerName?.[0] || "?"}
                 </div>
                 <div className="seller-details">
-                  <h4 onClick={handleViewSeller} className="seller-name hover-underline">
-                    {sellerProfile?.name || item.sellerName || "Продавец"}
+                  <h4 onClick={handleViewSeller} className="seller-name">
+                    {sellerProfile?.name || item.ownerName || item.sellerName || "Продавец"}
                   </h4>
                   {sellerProfile?.verified && (
-                    <span className="verified-badge pulse">✓ Проверенный продавец</span>
+                    <span className="verified-badge">✓ Проверенный продавец</span>
+                  )}
+                  {hasPhone && (
+                    <span className="seller-phone small" onClick={handleCall}>
+                      📞 {formatPhone(sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone)}
+                    </span>
                   )}
                 </div>
-                <button className="btn-secondary btn-sm hover-lift" onClick={handleViewSeller}>
+                <button className="btn-secondary btn-sm" onClick={handleViewSeller}>
                   Профиль
                 </button>
               </div>
@@ -488,7 +598,7 @@ export default function ListingDetail() {
             <div className="detail-section">
               <h3 className="section-title">Описание</h3>
               {item.description ? (
-                <div className="detail-description fade-in">{item.description}</div>
+                <div className="detail-description">{item.description}</div>
               ) : (
                 <p className="muted">Описание отсутствует</p>
               )}
@@ -503,8 +613,8 @@ export default function ListingDetail() {
                   <div className="specs-grid">
                     {Object.entries(item.attrs)
                       .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "")
-                      .map(([key, value], index) => (
-                        <div className="spec-item hover-lift" key={key} style={{ animationDelay: `${index * 0.1}s` }}>
+                      .map(([key, value]) => (
+                        <div className="spec-item" key={key}>
                           <span className="spec-key">{key}</span>
                           <span className="spec-value">{String(value)}</span>
                         </div>
@@ -516,10 +626,10 @@ export default function ListingDetail() {
           </div>
 
           {/* Похожие объявления */}
-          <div className="card similar-section slide-in-right" style={{ animationDelay: '0.3s' }}>
+          <div className="card similar-section">
             <div className="similar-header">
               <h3 className="section-title">Похожие объявления</h3>
-              <Link to="/listings" className="btnGhost hover-lift">
+              <Link to="/listings" className="btnGhost">
                 Смотреть все →
               </Link>
             </div>
@@ -530,28 +640,21 @@ export default function ListingDetail() {
               </div>
             ) : (
               <div className="similar-grid">
-                {similar.map((x, index) => {
+                {similar.map((x) => {
                   const xViews = x?.stats?.views ?? x?.views ?? 0;
                   const xPlan = String(x.plan || "base").toLowerCase();
                   
                   return (
-                    <Link 
-                      key={x.id} 
-                      to={`/listing/${x.id}`} 
-                      className="similar-card hover-lift"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
+                    <Link key={x.id} to={`/listing/${x.id}`} className="similar-card">
                       <div className="similar-image">
                         {x.photos?.[0] ? (
                           <img src={x.photos[0]} alt={x.title || ""} />
                         ) : (
                           <div className="image-placeholder">📷</div>
                         )}
-                        {xPlan !== "base" && (
-                          <span className={`badge-mini ${xPlan}`}>
-                            {xPlan === "vip" ? "VIP" : "TOP"}
-                          </span>
-                        )}
+                        <span className={`badge-mini ${xPlan}`}>
+                          {xPlan === "vip" ? "VIP" : xPlan === "top" ? "TOP" : ""}
+                        </span>
                       </div>
                       <div className="similar-content">
                         <h4 className="similar-title">{x.title || "—"}</h4>
@@ -571,13 +674,13 @@ export default function ListingDetail() {
 
         {/* Правая колонка - контакты и действия */}
         <aside className="detail-sidebar">
-          <div className="card contact-card sticky slide-in-left" style={{ animationDelay: '0.2s' }}>
+          <div className="card contact-card sticky">
             <div className="contact-header">
               <div>
                 <div className="muted small">Цена</div>
-                <div className="contact-price pulse-slow">{formatPrice(item.price)} TJS</div>
+                <div className="contact-price">{formatPrice(item.price)} TJS</div>
               </div>
-              <span className={`badge-plan ${plan} slide-in-right`}>
+              <span className={`badge-plan ${plan}`}>
                 {plan === "vip" ? "VIP" : plan === "top" ? "TOP" : "Базовый"}
               </span>
             </div>
@@ -585,11 +688,11 @@ export default function ListingDetail() {
             <div className="divider" />
 
             <div className="contact-stats">
-              <div className="stat-row hover-lift" onClick={() => navigate(`/city/${item.city}`)}>
+              <div className="stat-row" onClick={() => navigate(`/city/${item.city}`)}>
                 <span className="muted">📍 Город</span>
                 <span className="stat-value clickable">{item.city || "—"}</span>
               </div>
-              <div className="stat-row hover-lift" onClick={() => navigate(`/category/${item.category}`)}>
+              <div className="stat-row" onClick={() => navigate(`/category/${item.category}`)}>
                 <span className="muted">📦 Категория</span>
                 <span className="stat-value clickable">{item.category || "—"}</span>
               </div>
@@ -607,112 +710,107 @@ export default function ListingDetail() {
 
             <div className="divider" />
 
-            {/* Контактные кнопки с визуальной обратной связью */}
+            {/* Контактные кнопки с отображением номеров */}
             <div className="contact-actions">
-              <button 
-                className="btnPrimary contact-btn hover-lift" 
-                type="button" 
-                onClick={handleCall}
-                onMouseDown={(e) => e.currentTarget.classList.add('pressed')}
-                onMouseUp={(e) => e.currentTarget.classList.remove('pressed')}
-                onMouseLeave={(e) => e.currentTarget.classList.remove('pressed')}
-              >
-                <span className="btn-icon pulse">📞</span>
-                Позвонить
-              </button>
-              
-              <button 
-                className="btn-success contact-btn hover-lift" 
-                type="button" 
-                onClick={handleWhatsApp}
-                onMouseDown={(e) => e.currentTarget.classList.add('pressed')}
-                onMouseUp={(e) => e.currentTarget.classList.remove('pressed')}
-                onMouseLeave={(e) => e.currentTarget.classList.remove('pressed')}
-              >
-                <span className="btn-icon pulse">💬</span>
-                WhatsApp
-              </button>
-              
-              <button 
-                className="btn-secondary contact-btn hover-lift" 
-                type="button" 
-                onClick={handleEmail}
-                onMouseDown={(e) => e.currentTarget.classList.add('pressed')}
-                onMouseUp={(e) => e.currentTarget.classList.remove('pressed')}
-                onMouseLeave={(e) => e.currentTarget.classList.remove('pressed')}
-              >
-                <span className="btn-icon pulse">✉️</span>
-                Написать
-              </button>
-              
-              {/* Дополнительные контакты (показываются по клику) */}
-              {!showContactInfo ? (
-                <button 
-                  className="btn-ghost contact-btn hover-lift" 
-                  type="button" 
-                  onClick={() => setShowContactInfo(true)}
-                >
-                  <span className="btn-icon">🔽</span>
-                  Показать все контакты
+              {hasPhone ? (
+                <button className="btnPrimary contact-btn" type="button" onClick={handleCall}>
+                  <span className="btn-icon">📞</span>
+                  <div className="contact-btn-content">
+                    <span>Позвонить</span>
+                    <span className="contact-number">
+                      {formatPhone(sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone)}
+                    </span>
+                  </div>
                 </button>
               ) : (
+                <button className="btnPrimary contact-btn" type="button" disabled style={{ opacity: 0.6 }}>
+                  <span className="btn-icon">📞</span>
+                  <div className="contact-btn-content">
+                    <span>Позвонить</span>
+                    <span className="contact-number">Нет номера</span>
+                  </div>
+                </button>
+              )}
+
+              {hasWhatsApp ? (
+                <button className="btn-success contact-btn" type="button" onClick={handleWhatsApp}>
+                  <span className="btn-icon">💬</span>
+                  <div className="contact-btn-content">
+                    <span>WhatsApp</span>
+                    <span className="contact-number">
+                      {formatPhone(sellerProfile?.whatsapp || sellerProfile?.phone || item?.ownerPhone || item?.sellerPhone)}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <button className="btn-success contact-btn" type="button" disabled style={{ opacity: 0.6 }}>
+                  <span className="btn-icon">💬</span>
+                  <div className="contact-btn-content">
+                    <span>WhatsApp</span>
+                    <span className="contact-number">Нет WhatsApp</span>
+                  </div>
+                </button>
+              )}
+
+              {hasEmail ? (
+                <button className="btn-secondary contact-btn" type="button" onClick={handleEmail}>
+                  <span className="btn-icon">✉️</span>
+                  <div className="contact-btn-content">
+                    <span>Написать</span>
+                    <span className="contact-number">{sellerProfile?.email || item?.ownerEmail || item?.sellerEmail}</span>
+                  </div>
+                </button>
+              ) : (
+                <button className="btn-secondary contact-btn" type="button" disabled style={{ opacity: 0.6 }}>
+                  <span className="btn-icon">✉️</span>
+                  <div className="contact-btn-content">
+                    <span>Написать</span>
+                    <span className="contact-number">Нет email</span>
+                  </div>
+                </button>
+              )}
+              
+              {/* Кнопка для показа всех контактов */}
+              <button 
+                className="btn-ghost contact-btn" 
+                type="button" 
+                onClick={handleShowAllContacts}
+              >
+                <span className="btn-icon">📋</span>
+                <div className="contact-btn-content">
+                  <span>Все контакты</span>
+                  <span className="contact-number">
+                    {hasPhone && "📞 "}
+                    {hasWhatsApp && "💬 "}
+                    {hasEmail && "✉️"}
+                  </span>
+                </div>
+              </button>
+
+              {showContactInfo && (
                 <>
-                  <button 
-                    className="btn-ghost contact-btn hover-lift" 
-                    type="button" 
-                    onClick={handleViewSeller}
-                  >
-                    <span className="btn-icon">👤</span>
-                    Профиль продавца
-                  </button>
-                  
-                  <button 
-                    className={`btn-ghost contact-btn ${inWishlist ? 'active' : ''} hover-lift`} 
-                    type="button" 
-                    onClick={handleWishlist}
-                  >
-                    <span className="btn-icon pulse">{inWishlist ? '❤️' : '🤍'}</span>
+                  <button className="btn-ghost contact-btn" type="button" onClick={handleWishlist}>
+                    <span className="btn-icon">{inWishlist ? '❤️' : '🤍'}</span>
                     {inWishlist ? 'В избранном' : 'В избранное'}
                   </button>
                   
-                  <button 
-                    className="btn-secondary contact-btn hover-lift" 
-                    type="button" 
-                    onClick={handleContactSeller}
-                  >
+                  <button className="btn-secondary contact-btn" type="button" onClick={handleContactSeller}>
                     <span className="btn-icon">💭</span>
                     Чат с продавцом
                   </button>
                   
-                  <button 
-                    className="btn-ghost contact-btn hover-lift" 
-                    type="button" 
-                    onClick={handleReport}
-                  >
+                  <button className="btn-ghost contact-btn" type="button" onClick={handleReport}>
                     <span className="btn-icon">⚠️</span>
                     Пожаловаться
-                  </button>
-                  
-                  <button 
-                    className="btn-ghost contact-btn hover-lift" 
-                    type="button" 
-                    onClick={() => setShowContactInfo(false)}
-                  >
-                    <span className="btn-icon">🔼</span>
-                    Скрыть
                   </button>
                 </>
               )}
             </div>
 
-            {/* Информация о безопасности */}
-            <div className="contact-note muted small fade-in">
-              <p className="hover-lift">🔒 Безопасная сделка</p>
-              <p className="hover-lift">⚠️ Не переводите деньги до осмотра товара</p>
-              <p className="hover-lift">📱 ID: {item.id?.slice(-6) || "—"}</p>
-              {sellerProfile?.rating && (
-                <p className="hover-lift">⭐ Рейтинг продавца: {sellerProfile.rating.toFixed(1)}</p>
-              )}
+            <div className="contact-note muted small">
+              <p>🔒 Безопасная сделка</p>
+              <p>⚠️ Не переводите деньги до осмотра товара</p>
+              <p>📱 ID: {item.id?.slice(-6) || "—"}</p>
             </div>
           </div>
         </aside>
@@ -720,29 +818,25 @@ export default function ListingDetail() {
 
       {/* Модальное окно полной галереи */}
       {showFullGallery && (
-        <div className="modal-overlay fade-in" onClick={() => setShowFullGallery(false)}>
-          <div className="full-gallery slide-up" onClick={(e) => e.stopPropagation()}>
-            <button className="gallery-close hover-scale" onClick={() => setShowFullGallery(false)}>
+        <div className="modal-overlay" onClick={() => setShowFullGallery(false)}>
+          <div className="full-gallery" onClick={(e) => e.stopPropagation()}>
+            <button className="gallery-close" onClick={() => setShowFullGallery(false)}>
               ✕
             </button>
             <div className="full-gallery-content">
-              <img 
-                src={currentImage} 
-                alt={item.title} 
-                className="fade-in"
-              />
+              <img src={currentImage} alt={item.title} />
               {photos.length > 1 && (
                 <>
-                  <button className="gallery-nav-large prev hover-scale" onClick={prevImage}>
+                  <button className="gallery-nav-large prev" onClick={prevImage}>
                     ←
                   </button>
-                  <button className="gallery-nav-large next hover-scale" onClick={nextImage}>
+                  <button className="gallery-nav-large next" onClick={nextImage}>
                     →
                   </button>
                 </>
               )}
             </div>
-            <div className="full-gallery-counter fade-in">
+            <div className="full-gallery-counter">
               {selectedImageIndex + 1} / {photos.length}
             </div>
           </div>
