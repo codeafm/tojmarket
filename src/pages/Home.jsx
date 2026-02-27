@@ -1,17 +1,19 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/Home.jsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CATEGORIES } from "../data/categorySchemas.js";
 import { listListings, listListingsCount, getCategoryCounts } from "../firebase/listings.js";
-import ListingCard from "../components/ListingCard.jsx";
 
 const CAT_ICONS = {
   auto: "🚗",
   phones: "📱",
+  tablets: "📱",
+  computers: "💻",
   realty: "🏠",
   clothes: "👕",
   services: "🧰",
   other: "✨",
-  electronics: "💻",
+  electronics: "📺",
   furniture: "🪑",
   pets: "🐕",
   jobs: "💼",
@@ -44,22 +46,61 @@ export default function Home() {
   const [fresh, setFresh] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const topCats = useMemo(() => CATEGORIES.slice(0, 12), []);
+  // ✅ Функция для определения приоритета плана
+  const getPlanPriority = useCallback((plan) => {
+    const planStr = String(plan || "base").toLowerCase();
+    if (planStr === "vip") return 0;      // VIP - самый высокий приоритет
+    if (planStr === "top") return 1;      // TOP - средний приоритет
+    return 2;                              // Базовый - низкий приоритет
+  }, []);
+
+  // ✅ ИСПРАВЛЕНО: добавляем computers и tablets в список популярных категорий
+  const topCats = useMemo(() => {
+    // Берем первые 12 категорий
+    const allCats = CATEGORIES.slice(0, 12);
+    
+    // Проверяем, есть ли computers в списке
+    const hasComputers = allCats.some(c => c.id === "computers");
+    
+    // Если нет computers, добавляем его вручную
+    if (!hasComputers) {
+      const computersCat = CATEGORIES.find(c => c.id === "computers");
+      if (computersCat) {
+        allCats.pop();
+        allCats.push(computersCat);
+      }
+    }
+    
+    // Проверяем, есть ли tablets в списке
+    const hasTablets = allCats.some(c => c.id === "tablets");
+    
+    // Если нет tablets, добавляем его
+    if (!hasTablets) {
+      const tabletsCat = CATEGORIES.find(c => c.id === "tablets");
+      if (tabletsCat) {
+        allCats.pop();
+        allCats.push(tabletsCat);
+      }
+    }
+    
+    return allCats;
+  }, []);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Получаем общее количество объявлений
         const total = await listListingsCount();
         setTotalCount(total);
         
-        // Получаем количество по каждой категории
         const counts = await getCategoryCounts();
+        console.log("📊 Category counts:", counts);
+        console.log("📊 Tablets count:", counts?.tablets);
+        
         setCategoryCounts(counts);
         
-        // Получаем свежие объявления
-        const res = await listListings({ sort: "new", limit: 12 });
+        // ✅ Загружаем 8 свежих объявлений (для сетки 4x2)
+        const res = await listListings({ sort: "new", limit: 8 });
         setFresh(res);
       } catch (error) {
         console.error("Ошибка загрузки данных:", error);
@@ -69,6 +110,24 @@ export default function Home() {
     })();
   }, []);
 
+  // ✅ Сортируем свежие объявления: сначала VIP, потом TOP, потом базовые
+  const sortedFresh = useMemo(() => {
+    if (!fresh.length) return [];
+    
+    return [...fresh].sort((a, b) => {
+      // Сначала сортируем по плану (VIP > TOP > base)
+      const planA = getPlanPriority(a.plan);
+      const planB = getPlanPriority(b.plan);
+      
+      if (planA !== planB) {
+        return planA - planB; // Меньше число = выше приоритет
+      }
+      
+      // Если план одинаковый, сортируем по дате (новые primero)
+      return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+    });
+  }, [fresh, getPlanPriority]);
+
   function goSearch(e) {
     e?.preventDefault();
     const p = new URLSearchParams();
@@ -77,13 +136,11 @@ export default function Home() {
     nav(`/listings?${p.toString()}`);
   }
 
-  // Форматирование цены
   const formatPrice = (price) => {
     if (!price) return "—";
     return new Intl.NumberFormat("ru-RU").format(price) + " TJS";
   };
 
-  // Форматирование даты
   const formatDate = (timestamp) => {
     if (!timestamp?.seconds) return "недавно";
     const date = new Date(timestamp.seconds * 1000);
@@ -104,7 +161,7 @@ export default function Home() {
     });
   };
 
-  // Красивые скелетоны
+  // ✅ Обновляем скелетоны для 8 карточек
   const renderSkeletons = () => {
     return Array(8).fill(0).map((_, i) => (
       <div key={i} className="modern-skeleton-card">
@@ -176,16 +233,27 @@ export default function Home() {
           <h3 className="categories-title">Популярные категории</h3>
           <div className="categories-grid">
             {topCats.map((c) => {
-              const count = categoryCounts[c.id] || 0;
+              // Объединяем phones и tablets в одну категорию
+              let count = categoryCounts[c.id] || 0;
+              let displayName = c.title;
+              let linkCat = c.id;
+              
+              if (c.id === "phones") {
+                // Для телефонов показываем сумму телефонов и планшетов
+                count = (categoryCounts.phones || 0) + (categoryCounts.tablets || 0);
+                displayName = "Телефоны и планшеты";
+                linkCat = "phones,tablets"; // для поиска по обеим категориям
+              }
+              
               return (
                 <button
                   key={c.id}
                   className="category-card"
-                  onClick={() => nav(`/listings?cat=${c.id}`)}
+                  onClick={() => nav(`/listings?cat=${linkCat}`)}
                   type="button"
                 >
                   <span className="category-icon">{CAT_ICONS[c.id] || "📌"}</span>
-                  <span className="category-name">{c.title}</span>
+                  <span className="category-name">{displayName}</span>
                   <span className="category-count">
                     {count > 0 ? count.toLocaleString("ru-RU") : "0"}
                   </span>
@@ -205,8 +273,8 @@ export default function Home() {
               Свежие объявления
             </h2>
             <p className="section-subtitle">
-              {fresh.length > 0 
-                ? `${fresh.length} новых предложений` 
+              {sortedFresh.length > 0 
+                ? `${sortedFresh.length} новых предложений` 
                 : "Новые предложения каждый день"}
             </p>
           </div>
@@ -216,19 +284,21 @@ export default function Home() {
           </Link>
         </div>
 
-       <div className="home-listings-grid">
+        {/* ✅ Сетка 4x2 (8 карточек) */}
+        <div className="home-listings-grid grid-4x2">
           {loading ? (
             renderSkeletons()
-          ) : fresh.length > 0 ? (
-            fresh.map((item) => {
+          ) : sortedFresh.length > 0 ? (
+            sortedFresh.map((item, index) => {
               const plan = String(item.plan || "base").toLowerCase();
               const itemViews = item?.stats?.views ?? item?.views ?? 0;
               
               return (
-                <Link 
+                <Link
                   key={item.id} 
                   to={`/listing/${item.id}`} 
                   className="modern-listing-card"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="card-image-wrapper">
                     {item.photos?.[0] ? (
@@ -277,7 +347,11 @@ export default function Home() {
                       </div>
                       {item.category && (
                         <span className="footer-category">
-                          {CAT_ICONS[item.category] || "📦"} {item.category}
+                          {CAT_ICONS[item.category] || "📦"} {
+                            item.category === "tablets" ? "Планшеты" : 
+                            item.category === "phones" ? "Телефоны" : 
+                            item.category
+                          }
                         </span>
                       )}
                     </div>

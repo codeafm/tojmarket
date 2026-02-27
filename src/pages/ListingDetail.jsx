@@ -1,4 +1,5 @@
-// src/pages/ListingDetail.jsx
+// src/pages/ListingDetail.jsx (полный код с красивым дизайном)
+
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +11,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { getUserProfile } from "../firebase/users.js";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase.js";
+import "./ListingDetail.css"; // Подключаем CSS файл
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -468,7 +470,13 @@ export default function ListingDetail() {
               )}
 
               <div className={`listing-badge badge-${plan}`}>
-                {plan === "vip" ? "⭐ VIP" : plan === "top" ? "🔥 TOP" : "📋 Базовый"}
+                {plan === "vip" ? (
+                  <><span className="badge-star">⭐</span> VIP</>
+                ) : plan === "top" ? (
+                  <><span className="badge-fire">🔥</span> TOP</>
+                ) : (
+                  <><span className="badge-doc">📋</span> Базовый</>
+                )}
               </div>
             </div>
 
@@ -603,7 +611,7 @@ export default function ListingDetail() {
                         )}
                         {xPlan !== "base" && (
                           <span className={`similar-badge badge-${xPlan}`}>
-                            {xPlan === "vip" ? "VIP" : "TOP"}
+                            {xPlan === "vip" ? "⭐ VIP" : "🔥 TOP"}
                           </span>
                         )}
                       </div>

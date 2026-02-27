@@ -1,11 +1,69 @@
+// src/data/categorySchemas.js - обновленная структура категорий
+
 export const CATEGORIES = [
-  { id: "auto", title: "Авто" },
-  { id: "phones", title: "Телефоны" },
+  // Транспорт
+  { id: "auto", title: "Автомобили" },
+  
+  // Техника - теперь разделено на две категории
+  { id: "phones", title: "Телефоны и планшеты" },    // ✅ все телефоны, планшеты, смарт-часы
+  { id: "computers", title: "Компьютеры и ноутбуки" }, // ✅ все компьютеры, ноутбуки, комплектующие
+  
+  // Остальные категории
   { id: "realty", title: "Недвижимость" },
   { id: "clothes", title: "Одежда" },
   { id: "services", title: "Услуги" },
+  { id: "electronics", title: "Электроника" },        // ✅ остальная электроника (ТВ, аудио, фото)
+  { id: "furniture", title: "Мебель" },
+  { id: "pets", title: "Животные" },
+  { id: "jobs", title: "Работа" },
+  { id: "education", title: "Образование" },
+  { id: "sport", title: "Спорт" },
+  { id: "beauty", title: "Красота" },
+  { id: "kids", title: "Детские товары" },
+  { id: "tickets", title: "Билеты" },
+  { id: "rent", title: "Аренда" },
+  { id: "repair", title: "Ремонт" },
+  { id: "transport", title: "Грузоперевозки" },
+  { id: "construction", title: "Строительство" },
+  { id: "gardening", title: "Садоводство" },
+  { id: "music", title: "Музыка" },
+  { id: "games", title: "Игры" },
+  { id: "books", title: "Книги" },
+  { id: "collectibles", title: "Коллекционирование" },
+  { id: "art", title: "Искусство" },
+  { id: "photography", title: "Фотография" },
   { id: "other", title: "Другое" },
 ];
+
+// Схема для телефонов и планшетов
+export const PHONES_SCHEMA = {
+  brand: { type: "string", label: "Бренд", required: true },
+  model: { type: "string", label: "Модель", required: true },
+  memory: { type: "string", label: "Память (GB)" },
+  ram: { type: "string", label: "RAM (GB)" },
+  color: { type: "string", label: "Цвет" },
+  condition: { type: "string", label: "Состояние" },
+  battery: { type: "number", label: "Батарея (%)" },
+  accessories: { type: "boolean", label: "Аксессуары в комплекте" },
+};
+
+// Схема для компьютеров и ноутбуков
+export const COMPUTERS_SCHEMA = {
+  type: { type: "string", label: "Тип", required: true }, // ноутбук, ПК, моноблок
+  brand: { type: "string", label: "Бренд", required: true },
+  model: { type: "string", label: "Модель" },
+  processor: { type: "string", label: "Процессор" },
+  ram: { type: "string", label: "RAM (GB)" },
+  storage: { type: "string", label: "Накопитель (GB)" }, // SSD/HDD
+  storageType: { type: "string", label: "Тип накопителя" }, // SSD, HDD, Hybrid
+  graphics: { type: "string", label: "Видеокарта" },
+  screenSize: { type: "string", label: "Диагональ экрана" },
+  screenResolution: { type: "string", label: "Разрешение экрана" },
+  condition: { type: "string", label: "Состояние" },
+  accessories: { type: "boolean", label: "Комплектация полная" },
+};
+
+// Остальные схемы...
 
 const YEARS = Array.from({ length: 60 }, (_, i) => String(new Date().getFullYear() - i));
 

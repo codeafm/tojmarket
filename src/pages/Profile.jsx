@@ -453,7 +453,7 @@ export default function Profile() {
                   </button>
                 </div>
               ) : (
-                <div className="listings-grid">
+                <div className="profile-listings-grid">
                   {filteredListings.map((item, index) => (
                     <div 
                       key={item.id} 

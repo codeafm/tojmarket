@@ -11,6 +11,11 @@ const PHONE_BRANDS = [
   "Motorola", "Lenovo", "Meizu", "LG", "HTC", "BlackBerry", "Другой бренд",
 ];
 
+const TABLET_BRANDS = [
+  "Apple", "Samsung", "Xiaomi", "Huawei", "Lenovo", "Microsoft",
+  "Amazon", "Realme", "Honor", "Google", "Другой бренд"
+];
+
 const PHONE_MEMORY = ["16", "32", "64", "128", "256", "512", "1024"];
 const PHONE_RAM = ["1", "2", "3", "4", "6", "8", "12", "16", "18", "24"];
 const COLORS = [
@@ -205,21 +210,27 @@ function RangeField({ label, from, to, onFrom, onTo, phFrom = "от", phTo = "д
   );
 }
 
-/** ======= Category filter definitions с улучшенным UI ======= */
+/** ======= Category filter definitions с поддержкой tablets ======= */
 function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
   const set = (k, v) => setExtra((prev) => ({ ...prev, [k]: v }));
 
-  const phonesItems = itemsForOptions.filter((x) => (x.category || "") === "phones");
+  // Получаем текущую выбранную категорию (первую если их несколько)
+  const currentCategory = category.split(',')[0];
+
+  // Объединяем телефоны и планшеты для фильтров
+  const phonesTabletsItems = itemsForOptions.filter((x) => 
+    (x.category || "") === "phones" || (x.category || "") === "tablets"
+  );
   const autoItems = itemsForOptions.filter((x) => (x.category || "") === "auto");
   const realtyItems = itemsForOptions.filter((x) => (x.category || "") === "realty");
 
-  const phoneBrandsFromDb = uniq(phonesItems.map((x) => getExtraVal(x, "brand")));
+  const phoneBrandsFromDb = uniq(phonesTabletsItems.map((x) => getExtraVal(x, "brand")));
   const autoBrandsFromDb = uniq(autoItems.map((x) => getExtraVal(x, "brand")));
 
   const selectedBrand = extra.brand || "";
 
   const phoneModelsFromDb = uniq(
-    phonesItems
+    phonesTabletsItems
       .filter((x) => !selectedBrand || norm(getExtraVal(x, "brand")) === norm(selectedBrand))
       .map((x) => getExtraVal(x, "model"))
   );
@@ -230,15 +241,17 @@ function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
       .map((x) => getExtraVal(x, "model"))
   );
 
-  const phonesBrandOptions = uniq([...phoneBrandsFromDb, ...PHONE_BRANDS]);
+  // Объединяем бренды телефонов и планшетов
+  const phonesBrandOptions = uniq([...phoneBrandsFromDb, ...PHONE_BRANDS, ...TABLET_BRANDS]);
   const autoBrandOptions = uniq([...autoBrandsFromDb, ...AUTO_BRANDS]);
 
   const phoneModelOptions = phoneModelsFromDb;
   const autoModelOptions = autoModelsFromDb;
 
-  if (category === "phones") {
+  // Фильтры для телефонов и планшетов
+  if (currentCategory === "phones" || currentCategory === "tablets" || category === "phones,tablets") {
     return (
-      <FilterSection title="Телефоны">
+      <FilterSection title="Телефоны и планшеты">
         <DatalistField
           label="Бренд"
           value={extra.brand || ""}
@@ -298,7 +311,7 @@ function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
     );
   }
 
-  if (category === "auto") {
+  if (currentCategory === "auto") {
     return (
       <FilterSection title="Автомобили">
         <DatalistField
@@ -380,7 +393,7 @@ function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
     );
   }
 
-  if (category === "realty") {
+  if (currentCategory === "realty") {
     const roomsFromDb = uniq(realtyItems.map((x) => getExtraVal(x, "rooms"))).filter(Boolean);
     const floorsFromDb = uniq(realtyItems.map((x) => getExtraVal(x, "floor"))).filter(Boolean);
 
@@ -434,10 +447,20 @@ function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
   return null;
 }
 
-/** ======= client-side extra filtering ======= */
+/** ======= client-side extra filtering с поддержкой tablets ======= */
 function passExtraFilters(item, category, extra) {
   if (!category || category === "all") return true;
-  if ((item.category || "") !== category) return false;
+  
+  // Получаем текущую выбранную категорию (первую если их несколько)
+  const currentCategory = category.split(',')[0];
+  
+  // Для телефонов и планшетов пропускаем обе категории
+  if (currentCategory === "phones" || currentCategory === "tablets" || category === "phones,tablets") {
+    if (item.category !== "phones" && item.category !== "tablets") return false;
+  } else {
+    // Для остальных категорий - точное совпадение
+    if ((item.category || "") !== currentCategory) return false;
+  }
 
   const ex = getExtraObj(item);
 
@@ -458,7 +481,8 @@ function passExtraFilters(item, category, extra) {
     return true;
   };
 
-  if (category === "phones") {
+  // Общие фильтры для телефонов и планшетов
+  if (currentCategory === "phones" || currentCategory === "tablets" || category === "phones,tablets") {
     if (!textEqOrContains("brand", extra.brand)) return false;
     if (!textEqOrContains("model", extra.model)) return false;
     if (extra.memory) {
@@ -475,7 +499,7 @@ function passExtraFilters(item, category, extra) {
     return true;
   }
 
-  if (category === "auto") {
+  if (currentCategory === "auto") {
     if (!textEqOrContains("brand", extra.brand)) return false;
     if (!textEqOrContains("model", extra.model)) return false;
     if (!numBetween("year", extra.yearFrom, extra.yearTo)) return false;
@@ -488,12 +512,12 @@ function passExtraFilters(item, category, extra) {
     return true;
   }
 
-  if (category === "realty") {
+  if (currentCategory === "realty") {
     if (extra.type && !textEqOrContains("type", extra.type)) return false;
     if (extra.rooms && String(ex?.rooms ?? "") !== String(extra.rooms)) return false;
     if (!numBetween("area", extra.areaFrom, extra.areaTo)) return false;
     if (extra.repair && !textEqOrContains("repair", extra.repair)) return false;
-    if (extra.floor && String(ex?.floor ?? "") !== String(extra.rooms)) return false;
+    if (extra.floor && String(ex?.floor ?? "") !== String(extra.floor)) return false;
     return true;
   }
 
@@ -504,6 +528,19 @@ function passExtraFilters(item, category, extra) {
 const ModernListingCard = ({ item, index }) => {
   const plan = String(item.plan || "base").toLowerCase();
   const itemViews = item?.stats?.views ?? item?.views ?? 0;
+  
+  // Определяем отображаемое название категории
+  const getCategoryDisplay = () => {
+    if (item.category === "tablets") return "Планшет";
+    if (item.category === "phones") return "Телефон";
+    return item.category;
+  };
+
+  // Определяем иконку категории
+  const getCategoryIcon = () => {
+    if (item.category === "tablets" || item.category === "phones") return "📱";
+    return "📦";
+  };
   
   return (
     <Link 
@@ -555,6 +592,12 @@ const ModernListingCard = ({ item, index }) => {
             <span className="views-text">{itemViews}</span>
           </div>
         </div>
+        
+        {/* Категория товара */}
+        <div className="card-category">
+          <span className="category-icon">{getCategoryIcon()}</span>
+          <span className="category-name">{getCategoryDisplay()}</span>
+        </div>
       </div>
     </Link>
   );
@@ -592,6 +635,14 @@ export default function Listings() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
 
+  // ✅ Функция для определения приоритета плана
+  const getPlanPriority = useCallback((plan) => {
+    const planStr = String(plan || "base").toLowerCase();
+    if (planStr === "vip") return 0;      // VIP - самый высокий приоритет
+    if (planStr === "top") return 1;      // TOP - средний приоритет
+    return 2;                              // Базовый - низкий приоритет
+  }, []);
+
   // Функция для показа уведомлений
   const showNotification = useCallback((type, message) => {
     setNotification({ show: true, type, message });
@@ -610,9 +661,12 @@ export default function Listings() {
   }, [sp]);
 
   const baseParams = useMemo(() => {
+    // Для API берем первую категорию если их несколько
+    const apiCategory = category === "all" ? "all" : category.split(',')[0];
+    
     return {
       qText,
-      category,
+      category: apiCategory,
       city,
       sort,
       priceFrom: priceFrom ? Number(priceFrom) : 0,
@@ -649,19 +703,54 @@ export default function Listings() {
       return plan === status;
     };
 
-    const filtered = arr.filter(byStatus).filter((it) => passExtraFilters(it, category, extra));
+    // Фильтруем по категориям
+    const filtered = arr
+      .filter(byStatus)
+      .filter((it) => {
+        // Если категория "all" - пропускаем все
+        if (!category || category === "all") return true;
+        
+        // Разделяем выбранные категории
+        const selectedCats = category.split(',');
+        
+        // Проверяем, подходит ли товар под выбранные категории
+        return selectedCats.some(cat => {
+          // Для каждой категории применяем свои фильтры
+          if (it.category !== cat) return false;
+          return passExtraFilters(it, cat, extra);
+        });
+      });
     
-    // Сортировка
+    // ✅ НОВАЯ СОРТИРОВКА: сначала VIP, потом TOP, потом базовые
     return [...filtered].sort((a, b) => {
+      // Сначала сортируем по плану (VIP > TOP > base)
+      const planA = getPlanPriority(a.plan);
+      const planB = getPlanPriority(b.plan);
+      
+      if (planA !== planB) {
+        return planA - planB; // Меньше число = выше приоритет
+      }
+      
+      // Если план одинаковый, сортируем по выбранной сортировке
       if (sort === "cheap") return (a.price || 0) - (b.price || 0);
       if (sort === "expensive") return (b.price || 0) - (a.price || 0);
       return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
     });
-  }, [rawItems, status, category, extra, sort]);
+  }, [rawItems, status, category, extra, sort, getPlanPriority]);
 
   useEffect(() => {
     const categoryHandlers = {
       phones: () => setExtra((p) => ({
+        brand: p.brand || "",
+        model: p.model || "",
+        memory: p.memory || "",
+        ram: p.ram || "",
+        color: p.color || "",
+        condition: p.condition || "",
+        batteryFrom: p.batteryFrom || "",
+        batteryTo: p.batteryTo || "",
+      })),
+      tablets: () => setExtra((p) => ({
         brand: p.brand || "",
         model: p.model || "",
         memory: p.memory || "",
@@ -694,7 +783,10 @@ export default function Listings() {
       })),
     };
 
-    const handler = categoryHandlers[category];
+    // Получаем текущую категорию (первую если их несколько)
+    const currentCategory = category.split(',')[0];
+    const handler = categoryHandlers[currentCategory];
+    
     if (handler) {
       handler();
     } else {
@@ -705,7 +797,7 @@ export default function Listings() {
   const applyFilters = useCallback(() => {
     const p = {};
     if (qText.trim()) p.q = qText.trim();
-    if (category !== "all") p.cat = category;
+    if (category && category !== "all") p.cat = category;
     if (city.trim()) p.city = city.trim();
     if (priceFrom) p.from = priceFrom;
     if (priceTo) p.to = priceTo;
@@ -788,7 +880,7 @@ export default function Listings() {
                     className="filter-input hover-lift"
                     value={qText}
                     onChange={(e) => setQText(e.target.value)}
-                    placeholder="iPhone, Toyota..."
+                    placeholder="iPhone, iPad, Toyota..."
                   />
                 </div>
               </FilterSection>
@@ -802,6 +894,7 @@ export default function Listings() {
                     onChange={(e) => setCategory(e.target.value)}
                   >
                     <option value="all">Все категории</option>
+                    <option value="phones,tablets">📱 Телефоны и планшеты</option>
                     {CATEGORIES.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.title}
@@ -919,10 +1012,6 @@ export default function Listings() {
                 <span className="results-count">
                   Показано {items.length} из {rawItems.length} объявлений
                 </span>
-                <div className="results-views">
-                  <button className="view-btn active hover-scale">🔲</button>
-                  <button className="view-btn hover-scale">🔳</button>
-                </div>
               </div>
               <div className="modern-listings-grid">
                 {items.map((item, index) => (
