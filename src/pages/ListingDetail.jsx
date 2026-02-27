@@ -1,5 +1,4 @@
-// src/pages/ListingDetail.jsx (полный код с красивым дизайном)
-
+// src/pages/ListingDetail.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
@@ -11,7 +10,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { getUserProfile } from "../firebase/users.js";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase.js";
-import "./ListingDetail.css"; // Подключаем CSS файл
+import "./ListingDetail.css";
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -30,6 +29,7 @@ export default function ListingDetail() {
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [actionFeedback, setActionFeedback] = useState({ show: false, action: "", success: false });
   const [connectionError, setConnectionError] = useState(false);
+  const [showFullPhone, setShowFullPhone] = useState(false);
 
   const views = useMemo(() => item?.stats?.views ?? item?.views ?? 0, [item]);
 
@@ -66,20 +66,45 @@ export default function ListingDetail() {
     return n.toLocaleString("ru-RU") + " TJS";
   }, []);
 
-  const formatPhone = useCallback((phone) => {
+  // Функция для маскировки номера телефона (показывает только первые 4 и последние 2 цифры)
+  const maskPhone = useCallback((phone) => {
+    if (!phone) return "";
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length >= 10) {
+      const start = cleaned.slice(0, 4);
+      const end = cleaned.slice(-2);
+      const masked = '*'.repeat(cleaned.length - 6);
+      return `${start}${masked}${end}`;
+    }
+    return phone;
+  }, []);
+
+  const formatPhone = useCallback((phone, showFull = false) => {
     if (!phone) return "Не указан";
     if (phone.includes('+')) return phone;
     
     const cleaned = phone.replace(/\D/g, "");
+    
+    // Форматируем номер для отображения
+    let formatted = "";
     if (cleaned.length === 12) {
-      return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "+$1 ($2) $3-$4-$5");
+      formatted = cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "+$1 ($2) $3-$4-$5");
     } else if (cleaned.length === 11) {
-      return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1 ($2) $3-$4-$5");
+      formatted = cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1 ($2) $3-$4-$5");
     } else if (cleaned.length === 10) {
-      return cleaned.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "+7 ($1) $2-$3-$4");
+      formatted = cleaned.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "+7 ($1) $2-$3-$4");
+    } else {
+      formatted = phone;
     }
-    return phone;
-  }, []);
+    
+    // Если нужно показать маскированную версию
+    if (!showFull && cleaned.length >= 10) {
+      const masked = maskPhone(formatted);
+      return masked;
+    }
+    
+    return formatted;
+  }, [maskPhone]);
 
   const getCleanPhone = useCallback((phone) => {
     if (!phone) return "";
@@ -225,7 +250,7 @@ export default function ListingDetail() {
     if (phone) {
       const cleanPhone = getCleanPhone(phone);
       window.location.href = `tel:${cleanPhone}`;
-      showNotification("success", `📞 Звонок на ${formatPhone(phone)}`);
+      showNotification("success", `📞 Звонок на ${formatPhone(phone, true)}`);
       showActionFeedback("Звонок инициирован", true);
     } else {
       showNotification("error", "❌ Номер не указан");
@@ -334,6 +359,10 @@ export default function ListingDetail() {
   const handleShowAllContacts = useCallback(() => {
     setShowContactInfo(!showContactInfo);
   }, [showContactInfo]);
+
+  const toggleShowFullPhone = useCallback(() => {
+    setShowFullPhone(!showFullPhone);
+  }, [showFullPhone]);
 
   const hasPhone = !!(sellerProfile?.phone);
   const hasWhatsApp = !!(sellerProfile?.whatsapp);
@@ -470,13 +499,7 @@ export default function ListingDetail() {
               )}
 
               <div className={`listing-badge badge-${plan}`}>
-                {plan === "vip" ? (
-                  <><span className="badge-star">⭐</span> VIP</>
-                ) : plan === "top" ? (
-                  <><span className="badge-fire">🔥</span> TOP</>
-                ) : (
-                  <><span className="badge-doc">📋</span> Базовый</>
-                )}
+                {plan === "vip" ? "⭐ VIP" : plan === "top" ? "🔥 TOP" : "📋 Базовый"}
               </div>
             </div>
 
@@ -538,12 +561,12 @@ export default function ListingDetail() {
                   <div className="seller-contacts">
                     {hasPhone && (
                       <span className="seller-contact" onClick={handleCall}>
-                        📞 {formatPhone(sellerProfile?.phone)}
+                        📞 {formatPhone(sellerProfile?.phone, showFullPhone)}
                       </span>
                     )}
                     {hasWhatsApp && !hasPhone && (
                       <span className="seller-contact" onClick={handleWhatsApp}>
-                        💬 {formatPhone(sellerProfile?.whatsapp)}
+                        💬 {formatPhone(sellerProfile?.whatsapp, showFullPhone)}
                       </span>
                     )}
                   </div>
@@ -611,7 +634,7 @@ export default function ListingDetail() {
                         )}
                         {xPlan !== "base" && (
                           <span className={`similar-badge badge-${xPlan}`}>
-                            {xPlan === "vip" ? "⭐ VIP" : "🔥 TOP"}
+                            {xPlan === "vip" ? "VIP" : "TOP"}
                           </span>
                         )}
                       </div>
@@ -685,7 +708,20 @@ export default function ListingDetail() {
                     <span className="action-icon">📞</span>
                     <div className="action-content">
                       <span className="action-label">Позвонить</span>
-                      <span className="action-detail">{formatPhone(sellerProfile?.phone)}</span>
+                      <div className="phone-display">
+                        <span className="action-detail">
+                          {formatPhone(sellerProfile?.phone, showFullPhone)}
+                        </span>
+                        <button 
+                          className="phone-toggle" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleShowFullPhone();
+                          }}
+                        >
+                  
+                        </button>
+                      </div>
                     </div>
                   </button>
                 )}
@@ -695,7 +731,20 @@ export default function ListingDetail() {
                     <span className="action-icon">💬</span>
                     <div className="action-content">
                       <span className="action-label">WhatsApp</span>
-                      <span className="action-detail">{formatPhone(sellerProfile?.whatsapp)}</span>
+                      <div className="phone-display">
+                        <span className="action-detail">
+                          {formatPhone(sellerProfile?.whatsapp, showFullPhone)}
+                        </span>
+                        <button 
+                          className="phone-toggle" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleShowFullPhone();
+                          }}
+                        >
+                 
+                        </button>
+                      </div>
                     </div>
                   </button>
                 )}
@@ -721,7 +770,7 @@ export default function ListingDetail() {
                   onClick={handleShowAllContacts}
                 >
                   <span className="action-icon">📋</span>
-                  <span>{showContactInfo ? 'Скрыть' : 'Все действия'}</span>
+                  <span className="action-label">{showContactInfo ? 'Скрыть' : 'Все действия'}</span>
                 </button>
 
                 {showContactInfo && (
