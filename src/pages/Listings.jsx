@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CATEGORIES } from "../data/categorySchemas.js";
 import { listListings } from "../firebase/listings.js";
+import "./Listings.css"; // Импортируем стили
 
 /** ======= Fallback справочники (если в базе пока мало данных) ======= */
 const PHONE_BRANDS = [
@@ -130,25 +131,21 @@ const formatDate = (timestamp) => {
 };
 
 /** ======= UI components с современным дизайном и анимациями ======= */
-function FilterSection({ title, children }) {
-  return (
-    <div className="filter-section fade-in">
-      <h4 className="filter-section-title">{title}</h4>
-      <div className="filter-section-content">
-        {children}
-      </div>
-    </div>
-  );
-}
+const FilterSection = ({ title, children }) => (
+  <div className="filter-section fade-in">
+    <h4 className="filter-section-title">{title}</h4>
+    <div className="filter-section-content">{children}</div>
+  </div>
+);
 
-function SelectField({ label, value, onChange, options, placeholder = "Все" }) {
+const SelectField = ({ label, value, onChange, options, placeholder = "Все" }) => {
   const opts = options && options.length ? options : [];
   return (
     <div className="filter-field">
       <label className="filter-label">{label}</label>
-      <select 
-        className="filter-select hover-lift" 
-        value={value || ""} 
+      <select
+        className="filter-select hover-lift"
+        value={value || ""}
         onChange={(e) => onChange(e.target.value)}
       >
         <option value="">{placeholder}</option>
@@ -160,9 +157,9 @@ function SelectField({ label, value, onChange, options, placeholder = "Все" }
       </select>
     </div>
   );
-}
+};
 
-function DatalistField({ label, value, onChange, options, placeholder }) {
+const DatalistField = ({ label, value, onChange, options, placeholder }) => {
   const listId = useMemo(
     () => `dl_${label.replace(/\s+/g, "_")}_${Math.random().toString(16).slice(2)}`,
     [label]
@@ -185,33 +182,31 @@ function DatalistField({ label, value, onChange, options, placeholder }) {
       </datalist>
     </div>
   );
-}
+};
 
-function RangeField({ label, from, to, onFrom, onTo, phFrom = "от", phTo = "до" }) {
-  return (
-    <div className="filter-range">
-      <label className="filter-label">{label}</label>
-      <div className="range-inputs">
-        <input
-          className="filter-input hover-lift"
-          value={from || ""}
-          onChange={(e) => onFrom(e.target.value)}
-          placeholder={phFrom}
-        />
-        <span className="range-separator">—</span>
-        <input
-          className="filter-input hover-lift"
-          value={to || ""}
-          onChange={(e) => onTo(e.target.value)}
-          placeholder={phTo}
-        />
-      </div>
+const RangeField = ({ label, from, to, onFrom, onTo, phFrom = "от", phTo = "до" }) => (
+  <div className="filter-range">
+    <label className="filter-label">{label}</label>
+    <div className="range-inputs">
+      <input
+        className="filter-input hover-lift"
+        value={from || ""}
+        onChange={(e) => onFrom(e.target.value)}
+        placeholder={phFrom}
+      />
+      <span className="range-separator">—</span>
+      <input
+        className="filter-input hover-lift"
+        value={to || ""}
+        onChange={(e) => onTo(e.target.value)}
+        placeholder={phTo}
+      />
     </div>
-  );
-}
+  </div>
+);
 
 /** ======= Category filter definitions с поддержкой tablets ======= */
-function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
+const buildCategoryFilters = ({ category, extra, setExtra, itemsForOptions }) => {
   const set = (k, v) => setExtra((prev) => ({ ...prev, [k]: v }));
 
   // Получаем текущую выбранную категорию (первую если их несколько)
@@ -445,10 +440,10 @@ function buildCategoryFilters({ category, extra, setExtra, itemsForOptions }) {
   }
 
   return null;
-}
+};
 
 /** ======= client-side extra filtering с поддержкой tablets ======= */
-function passExtraFilters(item, category, extra) {
+const passExtraFilters = (item, category, extra) => {
   if (!category || category === "all") return true;
   
   // Получаем текущую выбранную категорию (первую если их несколько)
@@ -522,7 +517,7 @@ function passExtraFilters(item, category, extra) {
   }
 
   return true;
-}
+};
 
 // Компонент красивой карточки
 const ModernListingCard = ({ item, index }) => {
@@ -533,12 +528,16 @@ const ModernListingCard = ({ item, index }) => {
   const getCategoryDisplay = () => {
     if (item.category === "tablets") return "Планшет";
     if (item.category === "phones") return "Телефон";
-    return item.category;
+    return item.category === "auto" ? "Авто" : 
+           item.category === "realty" ? "Недвижимость" : 
+           item.category;
   };
 
   // Определяем иконку категории
   const getCategoryIcon = () => {
     if (item.category === "tablets" || item.category === "phones") return "📱";
+    if (item.category === "auto") return "🚗";
+    if (item.category === "realty") return "🏠";
     return "📦";
   };
   
@@ -618,7 +617,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-export default function Listings() {
+const Listings = () => {
   const [sp, setSp] = useSearchParams();
 
   const [qText, setQText] = useState(sp.get("q") || "");
@@ -676,7 +675,7 @@ export default function Listings() {
     };
   }, [qText, category, city, sort, priceFrom, priceTo, status]);
 
-  async function load(p = baseParams) {
+  const load = useCallback(async (p = baseParams) => {
     setLoading(true);
     try {
       const res = await listListings(p);
@@ -688,11 +687,11 @@ export default function Listings() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [baseParams, showNotification]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const items = useMemo(() => {
     const arr = rawItems || [];
@@ -721,7 +720,7 @@ export default function Listings() {
         });
       });
     
-    // ✅ НОВАЯ СОРТИРОВКА: сначала VIP, потом TOP, потом базовые
+    // Сортировка: сначала VIP, потом TOP, потом базовые
     return [...filtered].sort((a, b) => {
       // Сначала сортируем по плану (VIP > TOP > base)
       const planA = getPlanPriority(a.plan);
@@ -809,7 +808,7 @@ export default function Listings() {
     load(baseParams);
     setShowMobileFilters(false);
     showNotification("success", "Фильтры применены");
-  }, [qText, category, city, priceFrom, priceTo, status, sort, extra, baseParams, setSp, showNotification]);
+  }, [qText, category, city, priceFrom, priceTo, status, sort, extra, baseParams, setSp, load, showNotification]);
 
   const resetFilters = useCallback(() => {
     setQText("");
@@ -823,7 +822,7 @@ export default function Listings() {
     setSp({});
     load({ sort: "new", limit: 400 });
     showNotification("info", "Фильтры сброшены");
-  }, [setSp, showNotification]);
+  }, [setSp, load, showNotification]);
 
   return (
     <div className="listings-page fade-in">
@@ -1024,4 +1023,6 @@ export default function Listings() {
       </div>
     </div>
   );
-}
+};
+
+export default Listings;

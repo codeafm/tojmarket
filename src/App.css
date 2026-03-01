@@ -11791,20 +11791,7 @@
   gap: 8px;
 }
 
-.phone-toggle {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  color: white;
-}
+ 
 
 .phone-toggle:hover {
   background: rgba(255, 255, 255, 0.3);

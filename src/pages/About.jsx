@@ -1,7 +1,7 @@
 // src/pages/About.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import "./About.css"; // Подключаем CSS файл
+import "./About.css";
 
 export default function About() {
   return (
@@ -10,17 +10,21 @@ export default function About() {
       <div className="back-nav">
         <Link className="back-link" to="/">
           <span className="back-arrow">←</span>
-          На главную
+          <span>На главную</span>
         </Link>
       </div>
 
       <div className="about-card">
+        {/* Заголовок */}
         <div className="about-header">
           <div className="header-icon">ℹ️</div>
           <h1 className="about-title">О нас</h1>
-          <p className="about-subtitle">TojMarket — ваш надежный помощник в мире покупок и продаж</p>
+          <p className="about-subtitle">
+            TojMarket — ваш надежный помощник в мире покупок и продаж
+          </p>
         </div>
         
+        {/* Контент */}
         <div className="about-content">
           {/* Кто мы */}
           <section className="about-section fade-in">
@@ -28,9 +32,10 @@ export default function About() {
             <div className="section-content">
               <h2>Кто мы</h2>
               <p>
-                <strong>TojMarket</strong> — это крупнейшая онлайн-платформа для купли-продажи товаров 
-                и услуг в Таджикистане. Мы соединяем миллионы покупателей и продавцов, делая процесс 
-                покупки и продажи простым, безопасным и удобным.
+                <strong>TojMarket</strong> — это крупнейшая онлайн-платформа 
+                для купли-продажи товаров и услуг в Таджикистане. Мы соединяем 
+                миллионы покупателей и продавцов, делая процесс покупки и продажи 
+                простым, безопасным и удобным.
               </p>
             </div>
           </section>
@@ -41,8 +46,9 @@ export default function About() {
             <div className="section-content">
               <h2>Наша миссия</h2>
               <p>
-                Наша миссия — создать самую надежную и удобную площадку для торговли в Таджикистане, 
-                где каждый может легко и безопасно продать ненужные вещи или найти товар своей мечты.
+                Наша миссия — создать самую надежную и удобную площадку для 
+                торговли в Таджикистане, где каждый может легко и безопасно 
+                продать ненужные вещи или найти товар своей мечты.
               </p>
             </div>
           </section>
@@ -83,9 +89,9 @@ export default function About() {
             <div className="section-content">
               <h2>Наша история</h2>
               <p>
-                TojMarket был основан в 2024 году группой энтузиастов, которые хотели создать 
-                современную площадку для торговли в Таджикистане. За короткое время мы выросли 
-                в крупнейший сервис объявлений в стране.
+                TojMarket был основан в 2024 году группой энтузиастов, которые 
+                хотели создать современную площадку для торговли в Таджикистане. 
+                За короткое время мы выросли в крупнейший сервис объявлений в стране.
               </p>
               
               <div className="stats-grid">
@@ -111,9 +117,9 @@ export default function About() {
             <div className="section-content">
               <h2>Наша команда</h2>
               <p>
-                Мы — команда профессионалов, которые любят то, что делают. В нашей команде 
-                разработчики, дизайнеры, маркетологи и специалисты поддержки, которые каждый день 
-                работают над улучшением сервиса.
+                Мы — команда профессионалов, которые любят то, что делают. В нашей 
+                команде разработчики, дизайнеры, маркетологи и специалисты поддержки, 
+                которые каждый день работают над улучшением сервиса.
               </p>
             </div>
           </section>
@@ -128,23 +134,32 @@ export default function About() {
                   <span className="contact-icon">📧</span>
                   <div className="contact-details">
                     <span className="contact-label">Email:</span>
-                    <a href="mailto:info@tojmarket.tj" className="contact-value">info@tojmarket.tj</a>
+                    <a href="mailto:info@tojmarket.tj" className="contact-value">
+                      info@tojmarket.tj
+                    </a>
                   </div>
                 </div>
+                
                 <div className="contact-item">
                   <span className="contact-icon">📞</span>
                   <div className="contact-details">
                     <span className="contact-label">Телефон:</span>
-                    <a href="tel:+992111142022" className="contact-value">+992 111 14 20 22</a>
+                    <a href="tel:+992111142022" className="contact-value">
+                      +992 111 14 20 22
+                    </a>
                   </div>
                 </div>
+                
                 <div className="contact-item">
                   <span className="contact-icon">📍</span>
                   <div className="contact-details">
                     <span className="contact-label">Адрес:</span>
-                    <span className="contact-value">г. Душанбе, ул. Рудаки 123</span>
+                    <span className="contact-value">
+                      г. Душанбе, ул. Рудаки 123
+                    </span>
                   </div>
                 </div>
+                
                 <div className="contact-item">
                   <span className="contact-icon">🕒</span>
                   <div className="contact-details">
@@ -157,10 +172,11 @@ export default function About() {
           </section>
         </div>
 
+        {/* Футер */}
         <div className="about-footer">
           <Link to="/" className="btn-primary">
             <span className="btn-icon">🏠</span>
-            Вернуться на главную
+            <span>Вернуться на главную</span>
           </Link>
         </div>
       </div>
