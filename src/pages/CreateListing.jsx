@@ -9,206 +9,291 @@ function onlyDigits(v) {
   return String(v || "").replace(/[^\d]/g, "");
 }
 
-// Схемы характеристик для разных категорий
-const CATEGORY_SCHEMAS = {
-  phones: {
-    title: "Телефоны",
-    icon: "📱",
-    fields: [
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Apple, Samsung, Xiaomi...", required: false },
-      { name: "model", label: "Модель", type: "text", placeholder: "iPhone 15 Pro Max", required: false },
-      { name: "memory", label: "Память", type: "text", placeholder: "256 ГБ", required: false },
-      { name: "ram", label: "RAM", type: "text", placeholder: "8 ГБ", required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Черный, Белый...", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у", "На запчасти"], required: false },
-      { name: "battery", label: "Батарея (%)", type: "number", placeholder: "100", required: false }
-    ]
+// ===== ПОЛНЫЕ СПИСКИ ДЛЯ ВСЕХ КАТЕГОРИЙ =====
+const CATEGORIES = [
+  { id: "auto", name: "Автомобили", icon: "🚗" },
+  { id: "phones", name: "Телефоны", icon: "📱" },
+  { id: "tablets", name: "Планшеты", icon: "📟" },
+  { id: "laptops", name: "Ноутбуки", icon: "💻" },
+  { id: "accessories", name: "Аксессуары", icon: "🎧" },
+  { id: "audio", name: "Аудиотехника", icon: "🔊" },
+  { id: "realty", name: "Недвижимость", icon: "🏠" },
+  { id: "clothes", name: "Одежда", icon: "👕" },
+  { id: "furniture", name: "Мебель", icon: "🪑" },
+  { id: "pets", name: "Животные", icon: "🐕" },
+  { id: "jobs", name: "Работа", icon: "💼" },
+  { id: "services", name: "Услуги", icon: "🧰" },
+  { id: "other", name: "Другое", icon: "✨" }
+];
+
+// ===== СПИСКИ ГОРОДОВ ТАДЖИКИСТАНА =====
+const CITIES = [
+  "Душанбе",
+  "Худжанд",
+  "Бохтар",
+  "Куляб",
+  "Истаравшан",
+  "Канибадам",
+  "Пенджикент",
+  "Хорог",
+  "Турсунзаде",
+  "Гиссар",
+  "Вахдат",
+  "Рогун",
+  "Нурек",
+  "Левакант",
+  "Сарбанд",
+  "Дангара",
+  "Файзабад",
+  "Рашт",
+  "Айни",
+  "Мастчох"
+].sort();
+
+// ===== ПЛАНЫ РАЗМЕЩЕНИЯ =====
+const PLANS = [
+  { 
+    id: "base", 
+    name: "Базовый", 
+    price: "Бесплатно",
+    features: ["Обычная видимость", "До 6 фото", "30 дней"],
+    icon: "📋",
+    color: "base"
   },
-  tablets: {
-    title: "Планшеты",
-    icon: "📟",
-    fields: [
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Apple, Samsung, Huawei...", required: false },
-      { name: "model", label: "Модель", type: "text", placeholder: "iPad Pro 12.9", required: false },
-      { name: "memory", label: "Память", type: "text", placeholder: "256 ГБ", required: false },
-      { name: "ram", label: "RAM", type: "text", placeholder: "8 ГБ", required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Серый, Золотой...", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у", "На запчасти"], required: false },
-      { name: "screen", label: "Экран (дюймы)", type: "text", placeholder: "12.9", required: false }
-    ]
+  { 
+    id: "vip", 
+    name: "VIP", 
+    price: "VIP",
+    features: ["✨ Топ объявлений", "Выделение цветом", "Больше просмотров"],
+    icon: "⭐",
+    color: "vip"
   },
-  laptops: {
-    title: "Ноутбуки",
-    icon: "💻",
-    fields: [
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Apple, Dell, HP, Lenovo...", required: false },
-      { name: "model", label: "Модель", type: "text", placeholder: "MacBook Pro 16", required: false },
-      { name: "processor", label: "Процессор", type: "text", placeholder: "Apple M3, Intel i7...", required: false },
-      { name: "ram", label: "RAM", type: "text", placeholder: "16 ГБ", required: false },
-      { name: "storage", label: "Накопитель", type: "text", placeholder: "512 ГБ SSD", required: false },
-      { name: "screen", label: "Экран", type: "text", placeholder: '16" Retina', required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у", "На запчасти"], required: false }
-    ]
-  },
-  accessories: {
-    title: "Аксессуары",
-    icon: "🎧",
-    fields: [
-      { name: "type", label: "Тип", type: "text", placeholder: "Чехол, Зарядка, Наушники...", required: false },
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Apple, Samsung, Anker...", required: false },
-      { name: "compatibility", label: "Совместимость", type: "text", placeholder: "Для iPhone 15", required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Черный, Белый...", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у"], required: false }
-    ]
-  },
-  audio: {
-    title: "Аудио",
-    icon: "🔊",
-    fields: [
-      { name: "type", label: "Тип", type: "text", placeholder: "Наушники, Колонки, Микрофон...", required: false },
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Sony, JBL, Apple...", required: false },
-      { name: "model", label: "Модель", type: "text", placeholder: "AirPods Pro 2", required: false },
-      { name: "wireless", label: "Беспроводные", type: "select", options: ["Да", "Нет"], required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у"], required: false }
-    ]
-  },
-  auto: {
-    title: "Автомобили",
-    icon: "🚗",
-    fields: [
-      { name: "brand", label: "Марка", type: "text", placeholder: "Toyota, Mercedes, BMW...", required: false },
-      { name: "model", label: "Модель", type: "text", placeholder: "Camry, E-Class, X5...", required: false },
-      { name: "year", label: "Год выпуска", type: "number", placeholder: "2020", required: false },
-      { name: "mileage", label: "Пробег (км)", type: "number", placeholder: "50000", required: false },
-      { name: "fuel", label: "Топливо", type: "select", options: ["Бензин", "Дизель", "Газ", "Гибрид", "Электро"], required: false },
-      { name: "transmission", label: "Коробка", type: "select", options: ["Механика", "Автомат", "Робот", "Вариатор"], required: false },
-      { name: "drive", label: "Привод", type: "select", options: ["Передний", "Задний", "Полный"], required: false },
-      { name: "body", label: "Кузов", type: "select", options: ["Седан", "Хэтчбек", "Универсал", "Кроссовер", "Внедорожник", "Купе", "Минивэн"], required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Черный, Белый...", required: false }
-    ]
-  },
-  realty: {
-    title: "Недвижимость",
-    icon: "🏠",
-    fields: [
-      { name: "type", label: "Тип", type: "select", options: ["Квартира", "Дом", "Комната", "Участок", "Коммерческая"], required: false },
-      { name: "rooms", label: "Комнат", type: "select", options: ["1", "2", "3", "4", "5+"], required: false },
-      { name: "area", label: "Площадь (м²)", type: "number", placeholder: "65", required: false },
-      { name: "floor", label: "Этаж", type: "text", placeholder: "5 из 9", required: false },
-      { name: "repair", label: "Ремонт", type: "select", options: ["Без ремонта", "Косметический", "Евроремонт", "Дизайнерский"], required: false },
-      { name: "furniture", label: "Мебель", type: "select", options: ["Есть", "Частично", "Нет"], required: false }
-    ]
-  },
-  clothes: {
-    title: "Одежда",
-    icon: "👕",
-    fields: [
-      { name: "type", label: "Тип", type: "text", placeholder: "Платье, Рубашка, Джинсы...", required: false },
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Nike, Adidas, Zara...", required: false },
-      { name: "size", label: "Размер", type: "text", placeholder: "S, M, L, XL, 42...", required: false },
-      { name: "gender", label: "Для кого", type: "select", options: ["Мужское", "Женское", "Детское", "Унисекс"], required: false },
-      { name: "material", label: "Материал", type: "text", placeholder: "Хлопок, Кожа...", required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Черный, Белый...", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новое с биркой", "Новое", "Как новое", "Б/у"], required: false }
-    ]
-  },
-  furniture: {
-    title: "Мебель",
-    icon: "🪑",
-    fields: [
-      { name: "type", label: "Тип", type: "text", placeholder: "Диван, Стол, Кровать...", required: false },
-      { name: "material", label: "Материал", type: "text", placeholder: "Дерево, Металл, Пластик...", required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Белый, Коричневый...", required: false },
-      { name: "dimensions", label: "Размеры", type: "text", placeholder: "200x90x80 см", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новое", "Как новое", "Б/у"], required: false }
-    ]
-  },
-  pets: {
-    title: "Животные",
-    icon: "🐕",
-    fields: [
-      { name: "type", label: "Вид", type: "text", placeholder: "Собака, Кошка, Птица...", required: false },
-      { name: "breed", label: "Порода", type: "text", placeholder: "Лабрадор, Мейн-кун...", required: false },
-      { name: "age", label: "Возраст", type: "text", placeholder: "2 года", required: false },
-      { name: "gender", label: "Пол", type: "select", options: ["Мальчик", "Девочка"], required: false },
-      { name: "vaccinated", label: "Прививки", type: "select", options: ["Да", "Нет"], required: false },
-      { name: "documents", label: "Документы", type: "select", options: ["Есть", "Нет"], required: false }
-    ]
-  },
-  jobs: {
-    title: "Работа",
-    icon: "💼",
-    fields: [
-      { name: "company", label: "Компания", type: "text", placeholder: "Название компании", required: false },
-      { name: "position", label: "Должность", type: "text", placeholder: "Программист, Водитель...", required: false },
-      { name: "employment", label: "Тип занятости", type: "select", options: ["Полная", "Частичная", "Удаленная", "Стажировка"], required: false },
-      { name: "experience", label: "Опыт", type: "text", placeholder: "1-3 года", required: false },
-      { name: "education", label: "Образование", type: "text", placeholder: "Высшее, Среднее...", required: false },
-      { name: "salary", label: "Зарплата", type: "text", placeholder: "от 5000 TJS", required: false }
-    ]
-  },
-  services: {
-    title: "Услуги",
-    icon: "🧰",
-    fields: [
-      { name: "serviceType", label: "Тип услуги", type: "text", placeholder: "Ремонт, Уборка, Обучение...", required: false },
-      { name: "price", label: "Цена", type: "text", placeholder: "от 100 TJS/час", required: false },
-      { name: "experience", label: "Опыт", type: "text", placeholder: "5 лет", required: false },
-      { name: "guarantee", label: "Гарантия", type: "select", options: ["Есть", "Нет"], required: false }
-    ]
-  },
-  other: {
-    title: "Другое",
-    icon: "✨",
-    fields: [
-      { name: "brand", label: "Бренд", type: "text", placeholder: "Бренд", required: false },
-      { name: "condition", label: "Состояние", type: "select", options: ["Новый", "Как новый", "Б/у"], required: false },
-      { name: "color", label: "Цвет", type: "text", placeholder: "Цвет", required: false }
-    ]
+  { 
+    id: "top", 
+    name: "TOP", 
+    price: "TOP",
+    features: ["🔥 На первом месте", "Спецотметка", "Максимум просмотров"],
+    icon: "🚀",
+    color: "top"
   }
+];
+
+// ===== СОСТОЯНИЕ ТОВАРА =====
+const CONDITIONS = [
+  "Новый",
+  "Как новый",
+  "Отличное",
+  "Хорошее",
+  "Среднее",
+  "На запчасти"
+];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ АВТОМОБИЛЕЙ =====
+const AUTO_BRANDS = [
+  "Toyota", "Honda", "Nissan", "Mitsubishi", "Mazda", "Subaru", "Suzuki",
+  "Lexus", "Infiniti", "Acura", "BMW", "Mercedes-Benz", "Audi", "Volkswagen",
+  "Porsche", "Opel", "Ford", "Chevrolet", "Hyundai", "Kia", "Daewoo",
+  "Lada", "UAZ", "GAZ", "Renault", "Peugeot", "Citroen", "Fiat",
+  "Volvo", "Land Rover", "Jaguar", "Jeep", "Chrysler", "Dodge","BYD", "Китайский Электромобил"
+].sort();
+
+const AUTO_MODELS = {
+  Toyota: ["Camry", "Corolla", "RAV4", "Land Cruiser", "Prado", "Highlander", "Fortuner", "Hilux", "Yaris", "Avensis", "Crown", "Mark X", "Alphard", "Harrier", "Vitz"],
+  Honda: ["Accord", "Civic", "CR-V", "Pilot", "Odyssey", "Fit", "Jazz", "Stepwgn", "Freed", "Vezel", "HR-V"],
+  Nissan: ["Sunny", "Almera", "Teana", "Maxima", "X-Trail", "Patrol", "Qashqai", "Juke", "Murano", "Navara", "Pathfinder"],
+  "Mercedes-Benz": ["E-Class", "S-Class", "C-Class", "GLC", "GLE", "G-Class", "ML", "GL", "A-Class", "B-Class", "CLS", "SL", "AMG GT"],
+  BMW: ["3 Series", "5 Series", "7 Series", "X3", "X5", "X6", "X7", "1 Series", "Z4", "M3", "M5"],
+  // Добавьте остальные модели по аналогии
 };
+
+const AUTO_YEARS = Array.from({ length: 35 }, (_, i) => (new Date().getFullYear() - i).toString());
+
+const AUTO_FUEL = ["Бензин", "Дизель", "Газ", "Гибрид", "Электро", "Газ/Бензин"];
+const AUTO_TRANSMISSION = ["Механика", "Автомат", "Робот", "Вариатор"];
+const AUTO_DRIVE = ["Передний", "Задний", "Полный"];
+const AUTO_BODY = ["Седан", "Хэтчбек", "Универсал", "Кроссовер", "Внедорожник", "Купе", "Кабриолет", "Минивэн", "Пикап", "Лимузин"];
+const AUTO_COLORS = ["Белый", "Черный", "Серебристый", "Серый", "Синий", "Красный", "Зеленый", "Желтый", "Оранжевый", "Коричневый", "Бежевый", "Золотой", "Фиолетовый", "Розовый"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ ТЕЛЕФОНОВ =====
+const PHONE_BRANDS = [
+  "Apple", "Samsung", "Xiaomi", "Huawei", "Honor", "Oppo", "Vivo", "Realme",
+  "OnePlus", "Google", "Sony", "Nokia", "Motorola", "LG", "HTC", "Asus",
+  "ZTE", "Meizu", "Lenovo", "Alcatel", "BlackBerry", "Nothing"
+].sort();
+
+const PHONE_MODELS = {
+  Apple: ["iPhone 15 Pro Max", "iPhone 15 Pro", "iPhone 15 Plus", "iPhone 15", "iPhone 14 Pro Max", "iPhone 14 Pro", "iPhone 14 Plus", "iPhone 14", "iPhone 13 Pro Max", "iPhone 13 Pro", "iPhone 13", "iPhone 12", "iPhone 11", "iPhone X", "iPhone SE"],
+  Samsung: ["Galaxy S24 Ultra", "Galaxy S24+", "Galaxy S24", "Galaxy S23 Ultra", "Galaxy S23+", "Galaxy S23", "Galaxy S22", "Galaxy S21", "Galaxy A54", "Galaxy A34", "Galaxy A14", "Galaxy Z Fold5", "Galaxy Z Flip5", "Galaxy Note"],
+  Xiaomi: ["Xiaomi 14", "Xiaomi 13T", "Xiaomi 13", "Xiaomi 12", "Redmi Note 13", "Redmi Note 12", "Redmi 13C", "Poco X6", "Poco F5", "Mi Mix"],
+  // Добавьте остальные
+};
+
+const PHONE_MEMORY = ["8 ГБ", "16 ГБ", "32 ГБ", "64 ГБ", "128 ГБ", "256 ГБ", "512 ГБ", "1 ТБ"];
+const PHONE_RAM = ["1 ГБ", "2 ГБ", "3 ГБ", "4 ГБ", "6 ГБ", "8 ГБ", "12 ГБ", "16 ГБ", "24 ГБ"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ НОУТБУКОВ =====
+const LAPTOP_BRANDS = [
+  "Apple", "Dell", "HP", "Lenovo", "Asus", "Acer", "MSI", "Razer",
+  "Samsung", "LG", "Huawei", "Xiaomi", "Microsoft", "Alienware", "Gigabyte"
+].sort();
+
+const LAPTOP_PROCESSORS = [
+  "Apple M3", "Apple M2", "Apple M1", "Intel Core i9", "Intel Core i7", "Intel Core i5", "Intel Core i3",
+  "AMD Ryzen 9", "AMD Ryzen 7", "AMD Ryzen 5", "AMD Ryzen 3"
+];
+
+const LAPTOP_RAM = ["4 ГБ", "8 ГБ", "16 ГБ", "32 ГБ", "64 ГБ", "128 ГБ"];
+const LAPTOP_STORAGE = ["128 ГБ SSD", "256 ГБ SSD", "512 ГБ SSD", "1 ТБ SSD", "2 ТБ SSD", "500 ГБ HDD", "1 ТБ HDD"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ НЕДВИЖИМОСТИ =====
+const REALTY_TYPES = ["Квартира", "Дом", "Комната", "Участок", "Коммерческая", "Гараж"];
+const REALTY_ROOMS = ["Студия", "1", "2", "3", "4", "5", "6+"];
+const REALTY_REPAIR = ["Без ремонта", "Косметический", "Евроремонт", "Дизайнерский", "Требуется ремонт"];
+const REALTY_FURNITURE = ["Есть", "Частично", "Нет"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ ОДЕЖДЫ =====
+const CLOTHES_TYPES = ["Платье", "Рубашка", "Футболка", "Джинсы", "Брюки", "Юбка", "Куртка", "Пальто", "Костюм", "Спортивный костюм", "Обувь", "Аксессуары"];
+const CLOTHES_BRANDS = ["Nike", "Adidas", "Zara", "H&M", "Gucci", "Prada", "Louis Vuitton", "Levi's", "Calvin Klein", "Tommy Hilfiger", "Ralph Lauren", "Puma", "Reebok", "New Balance"].sort();
+const CLOTHES_SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "34", "36", "38", "40", "42", "44", "46", "48", "50", "52"];
+const CLOTHES_GENDER = ["Мужское", "Женское", "Детское", "Унисекс"];
+const CLOTHES_MATERIALS = ["Хлопок", "Лен", "Шерсть", "Кожа", "Замша", "Шелк", "Полиэстер", "Нейлон", "Эластан", "Вискоза"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ МЕБЕЛИ =====
+const FURNITURE_TYPES = ["Диван", "Кровать", "Шкаф", "Стол", "Стул", "Кресло", "Комод", "Тумба", "Полка", "Кухонный гарнитур", "Спальня", "Гостиная", "Прихожая"];
+const FURNITURE_MATERIALS = ["Дерево", "Металл", "Пластик", "Стекло", "МДФ", "ЛДСП", "Ротанг", "Кожа", "Ткань"];
+const FURNITURE_COLORS = ["Белый", "Черный", "Коричневый", "Бежевый", "Серый", "Дуб", "Орех", "Венге", "Ясень"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ ЖИВОТНЫХ =====
+const PET_TYPES = ["Собака", "Кошка", "Птица", "Рыбки", "Грызуны", "Рептилии", "Другое"];
+const PET_BREEDS = {
+  Собака: ["Лабрадор", "Немецкая овчарка", "Чихуахуа", "Йоркширский терьер", "Французский бульдог", "Такса", "Хаски", "Мопс", "Шпиц", "Ретривер", "Доберман", "Ротвейлер", "Бульдог", "Пудель"],
+  Кошка: ["Мейн-кун", "Сиамская", "Персидская", "Сфинкс", "Британская", "Шотландская", "Бенгальская", "Абиссинская", "Рэгдолл", "Русская голубая"]
+};
+const PET_GENDER = ["Мальчик", "Девочка"];
+const PET_AGE_UNITS = ["лет", "месяцев", "год"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ РАБОТЫ =====
+const JOB_TYPES = ["Полная занятость", "Частичная занятость", "Удаленная работа", "Стажировка", "Проектная работа", "Волонтерство"];
+const JOB_EDUCATION = ["Высшее", "Неоконченное высшее", "Среднее специальное", "Среднее", "Не имеет значения"];
+
+// ===== ХАРАКТЕРИСТИКИ ДЛЯ УСЛУГ =====
+const SERVICE_TYPES = ["Ремонт и обслуживание", "Уборка", "Красота и здоровье", "Обучение и репетиторство", "Перевозки и доставка", "Строительство", "Юридические услуги", "Бухгалтерские услуги", "IT услуги", "Фото и видео", "Организация мероприятий"];
 
 export default function CreateListing() {
   const nav = useNavigate();
   const { user } = useAuth();
 
-  // main fields
+  // ===== ОСНОВНЫЕ ПОЛЯ (ВВОДЯТСЯ ВРУЧНУЮ) =====
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("phones");
-  const [city, setCity] = useState("");
-  const [price, setPrice] = useState("");
-  const [plan, setPlan] = useState("base");
   const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
 
-  // Dynamic spec fields based on category
-  const [specs, setSpecs] = useState({});
+  // ===== ПОЛЯ ИЗ СПИСКОВ =====
+  const [category, setCategory] = useState("");
+  const [city, setCity] = useState("");
+  const [plan, setPlan] = useState("base");
+  const [condition, setCondition] = useState("");
 
+  // ===== ДИНАМИЧЕСКИЕ ХАРАКТЕРИСТИКИ =====
+  // Для автомобилей
+  const [autoBrand, setAutoBrand] = useState("");
+  const [autoModel, setAutoModel] = useState("");
+  const [autoYear, setAutoYear] = useState("");
+  const [autoMileage, setAutoMileage] = useState("");
+  const [autoFuel, setAutoFuel] = useState("");
+  const [autoTransmission, setAutoTransmission] = useState("");
+  const [autoDrive, setAutoDrive] = useState("");
+  const [autoBody, setAutoBody] = useState("");
+  const [autoColor, setAutoColor] = useState("");
+
+  // Для телефонов
+  const [phoneBrand, setPhoneBrand] = useState("");
+  const [phoneModel, setPhoneModel] = useState("");
+  const [phoneMemory, setPhoneMemory] = useState("");
+  const [phoneRAM, setPhoneRAM] = useState("");
+  const [phoneColor, setPhoneColor] = useState("");
+
+  // Для ноутбуков
+  const [laptopBrand, setLaptopBrand] = useState("");
+  const [laptopModel, setLaptopModel] = useState("");
+  const [laptopProcessor, setLaptopProcessor] = useState("");
+  const [laptopRAM, setLaptopRAM] = useState("");
+  const [laptopStorage, setLaptopStorage] = useState("");
+  const [laptopScreen, setLaptopScreen] = useState("");
+
+  // Для недвижимости
+  const [realtyType, setRealtyType] = useState("");
+  const [realtyRooms, setRealtyRooms] = useState("");
+  const [realtyArea, setRealtyArea] = useState("");
+  const [realtyFloor, setRealtyFloor] = useState("");
+  const [realtyRepair, setRealtyRepair] = useState("");
+  const [realtyFurniture, setRealtyFurniture] = useState("");
+
+  // Для одежды
+  const [clothesType, setClothesType] = useState("");
+  const [clothesBrand, setClothesBrand] = useState("");
+  const [clothesSize, setClothesSize] = useState("");
+  const [clothesGender, setClothesGender] = useState("");
+  const [clothesMaterial, setClothesMaterial] = useState("");
+  const [clothesColor, setClothesColor] = useState("");
+
+  // Для мебели
+  const [furnitureType, setFurnitureType] = useState("");
+  const [furnitureMaterial, setFurnitureMaterial] = useState("");
+  const [furnitureColor, setFurnitureColor] = useState("");
+  const [furnitureDimensions, setFurnitureDimensions] = useState("");
+
+  // Для животных
+  const [petType, setPetType] = useState("");
+  const [petBreed, setPetBreed] = useState("");
+  const [petAge, setPetAge] = useState("");
+  const [petAgeUnit, setPetAgeUnit] = useState("");
+  const [petGender, setPetGender] = useState("");
+  const [petVaccinated, setPetVaccinated] = useState("");
+  const [petDocuments, setPetDocuments] = useState("");
+
+  // Для работы
+  const [jobCompany, setJobCompany] = useState("");
+  const [jobPosition, setJobPosition] = useState("");
+  const [jobType, setJobType] = useState("");
+  const [jobExperience, setJobExperience] = useState("");
+  const [jobEducation, setJobEducation] = useState("");
+  const [jobSalary, setJobSalary] = useState("");
+
+  // Для услуг
+  const [serviceType, setServiceType] = useState("");
+  const [servicePrice, setServicePrice] = useState("");
+  const [serviceExperience, setServiceExperience] = useState("");
+  const [serviceGuarantee, setServiceGuarantee] = useState("");
+
+  // ===== ФОТО =====
   const [files, setFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
+
+  // ===== СОСТОЯНИЯ ФОРМЫ =====
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Get current category schema
-  const currentSchema = CATEGORY_SCHEMAS[category] || CATEGORY_SCHEMAS.other;
+  // Получаем доступные модели для выбранной марки авто
+  const availableAutoModels = autoBrand ? AUTO_MODELS[autoBrand] || [] : [];
 
-  // Reset specs when category changes
-  useEffect(() => {
-    setSpecs({});
-  }, [category]);
+  // Получаем доступные породы для выбранного типа животных
+  const availablePetBreeds = petType ? PET_BREEDS[petType] || [] : [];
 
+  // Проверка возможности отправки
   const canSubmit = useMemo(() => {
     if (!user?.uid) return false;
     if (saving) return false;
     if (!title.trim()) return false;
-    if (!category.trim()) return false;
-    if (!city.trim()) return false;
+    if (!category) return false;
+    if (!city) return false;
     const p = Number(onlyDigits(price));
     if (!Number.isFinite(p) || p <= 0) return false;
     return true;
   }, [user?.uid, saving, title, category, city, price]);
 
-  // Обработка выбора файлов с превью
+  // Обработка выбора файлов
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files || []).slice(0, 6);
     setFiles(selectedFiles);
@@ -231,13 +316,14 @@ export default function CreateListing() {
     setFilePreviews(newPreviews);
   };
 
-  // Очистка превью при размонтировании
+  // Очистка превью
   useEffect(() => {
     return () => {
       filePreviews.forEach(url => URL.revokeObjectURL(url));
     };
   }, [filePreviews]);
 
+  // Загрузка фото
   async function uploadPhotos(uid, fileArr) {
     const out = [];
     const safe = (fileArr || []).slice(0, 6);
@@ -254,6 +340,105 @@ export default function CreateListing() {
     return out;
   }
 
+  // Сбор всех характеристик в объект attrs
+  const collectSpecs = () => {
+    const attrs = {};
+
+    // Общие характеристики
+    if (condition) attrs.condition = condition;
+
+    // Для автомобилей
+    if (category === "auto") {
+      if (autoBrand) attrs.brand = autoBrand;
+      if (autoModel) attrs.model = autoModel;
+      if (autoYear) attrs.year = autoYear;
+      if (autoMileage) attrs.mileage = autoMileage;
+      if (autoFuel) attrs.fuel = autoFuel;
+      if (autoTransmission) attrs.transmission = autoTransmission;
+      if (autoDrive) attrs.drive = autoDrive;
+      if (autoBody) attrs.body = autoBody;
+      if (autoColor) attrs.color = autoColor;
+    }
+
+    // Для телефонов
+    if (category === "phones") {
+      if (phoneBrand) attrs.brand = phoneBrand;
+      if (phoneModel) attrs.model = phoneModel;
+      if (phoneMemory) attrs.memory = phoneMemory;
+      if (phoneRAM) attrs.ram = phoneRAM;
+      if (phoneColor) attrs.color = phoneColor;
+    }
+
+    // Для ноутбуков
+    if (category === "laptops") {
+      if (laptopBrand) attrs.brand = laptopBrand;
+      if (laptopModel) attrs.model = laptopModel;
+      if (laptopProcessor) attrs.processor = laptopProcessor;
+      if (laptopRAM) attrs.ram = laptopRAM;
+      if (laptopStorage) attrs.storage = laptopStorage;
+      if (laptopScreen) attrs.screen = laptopScreen;
+    }
+
+    // Для недвижимости
+    if (category === "realty") {
+      if (realtyType) attrs.type = realtyType;
+      if (realtyRooms) attrs.rooms = realtyRooms;
+      if (realtyArea) attrs.area = realtyArea;
+      if (realtyFloor) attrs.floor = realtyFloor;
+      if (realtyRepair) attrs.repair = realtyRepair;
+      if (realtyFurniture) attrs.furniture = realtyFurniture;
+    }
+
+    // Для одежды
+    if (category === "clothes") {
+      if (clothesType) attrs.clothesType = clothesType;
+      if (clothesBrand) attrs.brand = clothesBrand;
+      if (clothesSize) attrs.size = clothesSize;
+      if (clothesGender) attrs.gender = clothesGender;
+      if (clothesMaterial) attrs.material = clothesMaterial;
+      if (clothesColor) attrs.color = clothesColor;
+    }
+
+    // Для мебели
+    if (category === "furniture") {
+      if (furnitureType) attrs.type = furnitureType;
+      if (furnitureMaterial) attrs.material = furnitureMaterial;
+      if (furnitureColor) attrs.color = furnitureColor;
+      if (furnitureDimensions) attrs.dimensions = furnitureDimensions;
+    }
+
+    // Для животных
+    if (category === "pets") {
+      if (petType) attrs.petType = petType;
+      if (petBreed) attrs.breed = petBreed;
+      if (petAge) attrs.age = petAgeUnit ? `${petAge} ${petAgeUnit}` : petAge;
+      if (petGender) attrs.gender = petGender;
+      if (petVaccinated) attrs.vaccinated = petVaccinated;
+      if (petDocuments) attrs.documents = petDocuments;
+    }
+
+    // Для работы
+    if (category === "jobs") {
+      if (jobCompany) attrs.company = jobCompany;
+      if (jobPosition) attrs.position = jobPosition;
+      if (jobType) attrs.employment = jobType;
+      if (jobExperience) attrs.experience = jobExperience;
+      if (jobEducation) attrs.education = jobEducation;
+      if (jobSalary) attrs.salary = jobSalary;
+    }
+
+    // Для услуг
+    if (category === "services") {
+      if (serviceType) attrs.serviceType = serviceType;
+      if (servicePrice) attrs.servicePrice = servicePrice;
+      if (serviceExperience) attrs.experience = serviceExperience;
+      if (serviceGuarantee) attrs.guarantee = serviceGuarantee;
+    }
+
+    return attrs;
+  };
+
+  // Отправка формы
   async function onSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
@@ -264,24 +449,16 @@ export default function CreateListing() {
     try {
       const photoUrls = await uploadPhotos(user.uid, files);
 
-      // Clean up specs - remove empty values
-      const cleanSpecs = {};
-      Object.entries(specs).forEach(([key, value]) => {
-        if (value && value.trim()) {
-          cleanSpecs[key] = value.trim();
-        }
-      });
-
       const payload = {
         title: title.trim(),
-        category: category.trim(),
-        city: city.trim(),
         description: description.trim(),
-        plan,
         price: Number(onlyDigits(price)),
+        category,
+        city,
+        plan,
         photos: photoUrls,
-        attrs: cleanSpecs, // Save specs as attrs
-        ownerName: user?.displayName || user?.email || "Пользователь",
+        attrs: collectSpecs(),
+        ownerName: user?.displayName || user?.email?.split('@')[0] || "Пользователь",
         ownerId: user.uid,
         ownerEmail: user.email,
         createdAt: new Date(),
@@ -297,14 +474,6 @@ export default function CreateListing() {
       setSaving(false);
     }
   }
-
-  // Handle spec field change
-  const handleSpecChange = (fieldName, value) => {
-    setSpecs(prev => ({
-      ...prev,
-      [fieldName]: value
-    }));
-  };
 
   if (!user) {
     return (
@@ -375,7 +544,7 @@ export default function CreateListing() {
           <div className="progress-line"></div>
           <div className={`progress-step ${currentStep >= 3 ? 'active' : ''}`}>
             <div className="step-number">3</div>
-            <div className="step-label">Детали</div>
+            <div className="step-label">Характеристики</div>
           </div>
         </div>
       </div>
@@ -395,7 +564,7 @@ export default function CreateListing() {
       {/* Карточка с формой */}
       <div className="form-card">
         <form onSubmit={onSubmit}>
-          {/* ШАГ 1: Основная информация */}
+          {/* ШАГ 1: Основная информация (вводится вручную) */}
           <div className="form-section" style={{ display: currentStep === 1 ? 'block' : 'none' }}>
             <div className="section-header">
               <h2 className="section-title">
@@ -406,6 +575,7 @@ export default function CreateListing() {
             </div>
 
             <div className="form-grid">
+              {/* Название - вводится вручную */}
               <div className="form-group full-width">
                 <label className="form-label">
                   Название объявления <span className="required-star">*</span>
@@ -423,6 +593,7 @@ export default function CreateListing() {
                 </div>
               </div>
 
+              {/* Категория - из списка */}
               <div className="form-group">
                 <label className="form-label">
                   Категория <span className="required-star">*</span>
@@ -433,28 +604,34 @@ export default function CreateListing() {
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={saving}
                 >
-                  {Object.entries(CATEGORY_SCHEMAS).map(([key, schema]) => (
-                    <option key={key} value={key}>
-                      {schema.icon} {schema.title}
+                  <option value="">Выберите категорию</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Город - из списка */}
               <div className="form-group">
                 <label className="form-label">
                   Город <span className="required-star">*</span>
                 </label>
-                <input
-                  type="text"
-                  className="form-input"
+                <select
+                  className="form-select"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="Душанбе"
                   disabled={saving}
-                />
+                >
+                  <option value="">Выберите город</option>
+                  {CITIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
 
+              {/* Цена - вводится вручную */}
               <div className="form-group">
                 <label className="form-label">
                   Цена (TJS) <span className="required-star">*</span>
@@ -477,6 +654,7 @@ export default function CreateListing() {
                 </div>
               </div>
 
+              {/* Описание - вводится вручную */}
               <div className="form-group full-width">
                 <label className="form-label">Описание</label>
                 <textarea
@@ -505,7 +683,7 @@ export default function CreateListing() {
                 type="button"
                 className="btn-primary"
                 onClick={() => setCurrentStep(2)}
-                disabled={!title.trim() || !category || !city.trim() || !price}
+                disabled={!title.trim() || !category || !city || !price}
               >
                 Далее
                 <span className="btn-arrow">→</span>
@@ -602,87 +780,876 @@ export default function CreateListing() {
             <div className="section-header">
               <h2 className="section-title">
                 <span className="section-icon">⚙️</span>
-                Характеристики {currentSchema.icon} {currentSchema.title}
+                Характеристики
               </h2>
-              <span className="badge-secondary">необязательно</span>
+              <span className="badge-secondary">выберите из списков</span>
             </div>
 
-            {/* Динамические поля характеристик */}
+            {/* Состояние товара - общее для всех категорий */}
             <div className="specs-section">
-              <h3 className="subsection-title">Характеристики товара</h3>
+              <h3 className="subsection-title">Состояние товара</h3>
               <div className="specs-grid">
-                {currentSchema.fields.map((field) => (
-                  <div key={field.name} className={`form-group ${field.fullWidth ? 'full-width' : ''}`}>
-                    <label className="form-label">{field.label}</label>
-                    {field.type === 'select' ? (
-                      <select
-                        className="form-select"
-                        value={specs[field.name] || ''}
-                        onChange={(e) => handleSpecChange(field.name, e.target.value)}
-                        disabled={saving}
-                      >
-                        <option value="">Выберите {field.label.toLowerCase()}</option>
-                        {field.options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : field.type === 'number' ? (
+                <div className="form-group">
+                  <label className="form-label">Состояние</label>
+                  <select
+                    className="form-select"
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value)}
+                    disabled={saving}
+                  >
+                    <option value="">Выберите состояние</option>
+                    {CONDITIONS.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ДИНАМИЧЕСКИЕ ХАРАКТЕРИСТИКИ В ЗАВИСИМОСТИ ОТ КАТЕГОРИИ */}
+            
+            {/* АВТОМОБИЛИ */}
+            {category === "auto" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">🚗 Характеристики автомобиля</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Марка</label>
+                    <select
+                      className="form-select"
+                      value={autoBrand}
+                      onChange={(e) => {
+                        setAutoBrand(e.target.value);
+                        setAutoModel("");
+                      }}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите марку</option>
+                      {AUTO_BRANDS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Модель</label>
+                    <select
+                      className="form-select"
+                      value={autoModel}
+                      onChange={(e) => setAutoModel(e.target.value)}
+                      disabled={!autoBrand || saving}
+                    >
+                      <option value="">Выберите модель</option>
+                      {availableAutoModels.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Год выпуска</label>
+                    <select
+                      className="form-select"
+                      value={autoYear}
+                      onChange={(e) => setAutoYear(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите год</option>
+                      {AUTO_YEARS.map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Пробег (км)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={autoMileage}
+                      onChange={(e) => setAutoMileage(e.target.value)}
+                      placeholder="50000"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Топливо</label>
+                    <select
+                      className="form-select"
+                      value={autoFuel}
+                      onChange={(e) => setAutoFuel(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип топлива</option>
+                      {AUTO_FUEL.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Коробка передач</label>
+                    <select
+                      className="form-select"
+                      value={autoTransmission}
+                      onChange={(e) => setAutoTransmission(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите КПП</option>
+                      {AUTO_TRANSMISSION.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Привод</label>
+                    <select
+                      className="form-select"
+                      value={autoDrive}
+                      onChange={(e) => setAutoDrive(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите привод</option>
+                      {AUTO_DRIVE.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Тип кузова</label>
+                    <select
+                      className="form-select"
+                      value={autoBody}
+                      onChange={(e) => setAutoBody(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите кузов</option>
+                      {AUTO_BODY.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Цвет</label>
+                    <select
+                      className="form-select"
+                      value={autoColor}
+                      onChange={(e) => setAutoColor(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите цвет</option>
+                      {AUTO_COLORS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ТЕЛЕФОНЫ */}
+            {category === "phones" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">📱 Характеристики телефона</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Бренд</label>
+                    <select
+                      className="form-select"
+                      value={phoneBrand}
+                      onChange={(e) => {
+                        setPhoneBrand(e.target.value);
+                        setPhoneModel("");
+                      }}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите бренд</option>
+                      {PHONE_BRANDS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Модель</label>
+                    <select
+                      className="form-select"
+                      value={phoneModel}
+                      onChange={(e) => setPhoneModel(e.target.value)}
+                      disabled={!phoneBrand || saving}
+                    >
+                      <option value="">Выберите модель</option>
+                      {phoneBrand && PHONE_MODELS[phoneBrand]?.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Память</label>
+                    <select
+                      className="form-select"
+                      value={phoneMemory}
+                      onChange={(e) => setPhoneMemory(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите объем памяти</option>
+                      {PHONE_MEMORY.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">RAM (оперативная память)</label>
+                    <select
+                      className="form-select"
+                      value={phoneRAM}
+                      onChange={(e) => setPhoneRAM(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите объем RAM</option>
+                      {PHONE_RAM.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Цвет</label>
+                    <select
+                      className="form-select"
+                      value={phoneColor}
+                      onChange={(e) => setPhoneColor(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите цвет</option>
+                      {AUTO_COLORS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* НОУТБУКИ */}
+            {category === "laptops" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">💻 Характеристики ноутбука</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Бренд</label>
+                    <select
+                      className="form-select"
+                      value={laptopBrand}
+                      onChange={(e) => setLaptopBrand(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите бренд</option>
+                      {LAPTOP_BRANDS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Модель</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={laptopModel}
+                      onChange={(e) => setLaptopModel(e.target.value)}
+                      placeholder="MacBook Pro 16"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Процессор</label>
+                    <select
+                      className="form-select"
+                      value={laptopProcessor}
+                      onChange={(e) => setLaptopProcessor(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите процессор</option>
+                      {LAPTOP_PROCESSORS.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">RAM</label>
+                    <select
+                      className="form-select"
+                      value={laptopRAM}
+                      onChange={(e) => setLaptopRAM(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите RAM</option>
+                      {LAPTOP_RAM.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Накопитель</label>
+                    <select
+                      className="form-select"
+                      value={laptopStorage}
+                      onChange={(e) => setLaptopStorage(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите накопитель</option>
+                      {LAPTOP_STORAGE.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Экран</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={laptopScreen}
+                      onChange={(e) => setLaptopScreen(e.target.value)}
+                      placeholder='16" Retina'
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* НЕДВИЖИМОСТЬ */}
+            {category === "realty" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">🏠 Характеристики недвижимости</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Тип</label>
+                    <select
+                      className="form-select"
+                      value={realtyType}
+                      onChange={(e) => setRealtyType(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип</option>
+                      {REALTY_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Комнат</label>
+                    <select
+                      className="form-select"
+                      value={realtyRooms}
+                      onChange={(e) => setRealtyRooms(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите количество</option>
+                      {REALTY_ROOMS.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Площадь (м²)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={realtyArea}
+                      onChange={(e) => setRealtyArea(e.target.value)}
+                      placeholder="65"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Этаж</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={realtyFloor}
+                      onChange={(e) => setRealtyFloor(e.target.value)}
+                      placeholder="5 из 9"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ремонт</label>
+                    <select
+                      className="form-select"
+                      value={realtyRepair}
+                      onChange={(e) => setRealtyRepair(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите ремонт</option>
+                      {REALTY_REPAIR.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Мебель</label>
+                    <select
+                      className="form-select"
+                      value={realtyFurniture}
+                      onChange={(e) => setRealtyFurniture(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите наличие мебели</option>
+                      {REALTY_FURNITURE.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ОДЕЖДА */}
+            {category === "clothes" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">👕 Характеристики одежды</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Тип</label>
+                    <select
+                      className="form-select"
+                      value={clothesType}
+                      onChange={(e) => setClothesType(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип</option>
+                      {CLOTHES_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Бренд</label>
+                    <select
+                      className="form-select"
+                      value={clothesBrand}
+                      onChange={(e) => setClothesBrand(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите бренд</option>
+                      {CLOTHES_BRANDS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Размер</label>
+                    <select
+                      className="form-select"
+                      value={clothesSize}
+                      onChange={(e) => setClothesSize(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите размер</option>
+                      {CLOTHES_SIZES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Для кого</label>
+                    <select
+                      className="form-select"
+                      value={clothesGender}
+                      onChange={(e) => setClothesGender(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите пол</option>
+                      {CLOTHES_GENDER.map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Материал</label>
+                    <select
+                      className="form-select"
+                      value={clothesMaterial}
+                      onChange={(e) => setClothesMaterial(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите материал</option>
+                      {CLOTHES_MATERIALS.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Цвет</label>
+                    <select
+                      className="form-select"
+                      value={clothesColor}
+                      onChange={(e) => setClothesColor(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите цвет</option>
+                      {AUTO_COLORS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* МЕБЕЛЬ */}
+            {category === "furniture" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">🪑 Характеристики мебели</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Тип</label>
+                    <select
+                      className="form-select"
+                      value={furnitureType}
+                      onChange={(e) => setFurnitureType(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип</option>
+                      {FURNITURE_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Материал</label>
+                    <select
+                      className="form-select"
+                      value={furnitureMaterial}
+                      onChange={(e) => setFurnitureMaterial(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите материал</option>
+                      {FURNITURE_MATERIALS.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Цвет</label>
+                    <select
+                      className="form-select"
+                      value={furnitureColor}
+                      onChange={(e) => setFurnitureColor(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите цвет</option>
+                      {FURNITURE_COLORS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Размеры</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={furnitureDimensions}
+                      onChange={(e) => setFurnitureDimensions(e.target.value)}
+                      placeholder="200x90x80 см"
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ЖИВОТНЫЕ */}
+            {category === "pets" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">🐕 Характеристики животного</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Вид</label>
+                    <select
+                      className="form-select"
+                      value={petType}
+                      onChange={(e) => {
+                        setPetType(e.target.value);
+                        setPetBreed("");
+                      }}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите вид</option>
+                      {PET_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Порода</label>
+                    <select
+                      className="form-select"
+                      value={petBreed}
+                      onChange={(e) => setPetBreed(e.target.value)}
+                      disabled={!petType || saving}
+                    >
+                      <option value="">Выберите породу</option>
+                      {availablePetBreeds.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Возраст</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <input
                         type="number"
                         className="form-input"
-                        value={specs[field.name] || ''}
-                        onChange={(e) => handleSpecChange(field.name, e.target.value)}
-                        placeholder={field.placeholder}
+                        style={{ flex: 2 }}
+                        value={petAge}
+                        onChange={(e) => setPetAge(e.target.value)}
+                        placeholder="2"
                         disabled={saving}
                       />
-                    ) : (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={specs[field.name] || ''}
-                        onChange={(e) => handleSpecChange(field.name, e.target.value)}
-                        placeholder={field.placeholder}
+                      <select
+                        className="form-select"
+                        style={{ flex: 1 }}
+                        value={petAgeUnit}
+                        onChange={(e) => setPetAgeUnit(e.target.value)}
                         disabled={saving}
-                      />
-                    )}
+                      >
+                        <option value="">ед.</option>
+                        {PET_AGE_UNITS.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                ))}
+
+                  <div className="form-group">
+                    <label className="form-label">Пол</label>
+                    <select
+                      className="form-select"
+                      value={petGender}
+                      onChange={(e) => setPetGender(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите пол</option>
+                      {PET_GENDER.map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Прививки</label>
+                    <select
+                      className="form-select"
+                      value={petVaccinated}
+                      onChange={(e) => setPetVaccinated(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите</option>
+                      <option value="Да">Да</option>
+                      <option value="Нет">Нет</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Документы</label>
+                    <select
+                      className="form-select"
+                      value={petDocuments}
+                      onChange={(e) => setPetDocuments(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите</option>
+                      <option value="Есть">Есть</option>
+                      <option value="Нет">Нет</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* РАБОТА */}
+            {category === "jobs" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">💼 Характеристики работы</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Компания</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={jobCompany}
+                      onChange={(e) => setJobCompany(e.target.value)}
+                      placeholder="Название компании"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Должность</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={jobPosition}
+                      onChange={(e) => setJobPosition(e.target.value)}
+                      placeholder="Программист, Водитель..."
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Тип занятости</label>
+                    <select
+                      className="form-select"
+                      value={jobType}
+                      onChange={(e) => setJobType(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип</option>
+                      {JOB_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Опыт</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={jobExperience}
+                      onChange={(e) => setJobExperience(e.target.value)}
+                      placeholder="1-3 года"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Образование</label>
+                    <select
+                      className="form-select"
+                      value={jobEducation}
+                      onChange={(e) => setJobEducation(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите образование</option>
+                      {JOB_EDUCATION.map(e => (
+                        <option key={e} value={e}>{e}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Зарплата</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={jobSalary}
+                      onChange={(e) => setJobSalary(e.target.value)}
+                      placeholder="от 5000 TJS"
+                      disabled={saving}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* УСЛУГИ */}
+            {category === "services" && (
+              <div className="specs-section">
+                <h3 className="subsection-title">🧰 Характеристики услуги</h3>
+                <div className="specs-grid">
+                  <div className="form-group">
+                    <label className="form-label">Тип услуги</label>
+                    <select
+                      className="form-select"
+                      value={serviceType}
+                      onChange={(e) => setServiceType(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите тип</option>
+                      {SERVICE_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Цена</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={servicePrice}
+                      onChange={(e) => setServicePrice(e.target.value)}
+                      placeholder="от 100 TJS/час"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Опыт</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={serviceExperience}
+                      onChange={(e) => setServiceExperience(e.target.value)}
+                      placeholder="5 лет"
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Гарантия</label>
+                    <select
+                      className="form-select"
+                      value={serviceGuarantee}
+                      onChange={(e) => setServiceGuarantee(e.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Выберите</option>
+                      <option value="Есть">Есть</option>
+                      <option value="Нет">Нет</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* План размещения */}
             <div className="plan-section">
               <h3 className="subsection-title">Выберите план размещения</h3>
               <div className="plan-cards">
-                {[
-                  { 
-                    id: "base", 
-                    label: "Базовый", 
-                    price: "Бесплатно",
-                    features: ["Обычная видимость", "До 6 фото", "30 дней"],
-                    gradient: "base",
-                    icon: "📋"
-                  },
-                  { 
-                    id: "vip", 
-                    label: "VIP", 
-                    price: "VIP",
-                    features: ["✨ Топ объявлений", "Выделение цветом", "Больше просмотров"],
-                    gradient: "vip",
-                    icon: "⭐"
-                  },
-                  { 
-                    id: "top", 
-                    label: "TOP", 
-                    price: "TOP",
-                    features: ["🔥 На первом месте", "Спецотметка", "Максимум просмотров"],
-                    gradient: "top",
-                    icon: "🚀"
-                  }
-                ].map((p) => (
+                {PLANS.map((p) => (
                   <label
                     key={p.id}
-                    className={`plan-card ${plan === p.id ? "selected" : ""} ${p.gradient}`}
+                    className={`plan-card ${plan === p.id ? "selected" : ""} ${p.color}`}
                   >
                     <input
                       type="radio"
@@ -695,7 +1662,7 @@ export default function CreateListing() {
                     <div className="plan-card-content">
                       <div className="plan-icon">{p.icon}</div>
                       <div className="plan-info">
-                        <div className="plan-name">{p.label}</div>
+                        <div className="plan-name">{p.name}</div>
                         <div className="plan-price">{p.price}</div>
                       </div>
                     </div>

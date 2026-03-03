@@ -8,6 +8,7 @@ import {
 } from "../firebase/listings.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getUserProfile } from "../firebase/users.js";
+import { createChat } from "../firebase/chats.js";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase.js";
 import "./ListingDetail.css";
@@ -26,6 +27,9 @@ export default function ListingDetail() {
   const [sellerProfile, setSellerProfile] = useState(null);
   const [inWishlist, setInWishlist] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [sendingChat, setSendingChat] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [actionFeedback, setActionFeedback] = useState({ show: false, action: "", success: false });
   const [connectionError, setConnectionError] = useState(false);
@@ -66,7 +70,7 @@ export default function ListingDetail() {
     return n.toLocaleString("ru-RU") + " TJS";
   }, []);
 
-  // Функция для маскировки номера телефона (показывает только первые 4 и последние 2 цифры)
+  // Функция для маскировки номера телефона
   const maskPhone = useCallback((phone) => {
     if (!phone) return "";
     const cleaned = phone.replace(/\D/g, "");
@@ -85,7 +89,6 @@ export default function ListingDetail() {
     
     const cleaned = phone.replace(/\D/g, "");
     
-    // Форматируем номер для отображения
     let formatted = "";
     if (cleaned.length === 12) {
       formatted = cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "+$1 ($2) $3-$4-$5");
@@ -97,7 +100,6 @@ export default function ListingDetail() {
       formatted = phone;
     }
     
-    // Если нужно показать маскированную версию
     if (!showFull && cleaned.length >= 10) {
       const masked = maskPhone(formatted);
       return masked;
@@ -245,6 +247,48 @@ export default function ListingDetail() {
     setCurrentImage(item.photos[newIndex]);
   }, [item?.photos, selectedImageIndex]);
 
+  // Обработчик для кнопки чата
+  const handleChatClick = () => {
+    if (!user) {
+      showNotification("warning", "⚠️ Войдите, чтобы написать продавцу");
+      setTimeout(() => navigate("/login", { state: { from: `/listing/${id}` } }), 1500);
+      return;
+    }
+
+    const ownerId = item?.ownerId || item?.ownerUid || item?.sellerId;
+    if (user.uid === ownerId) {
+      showNotification("info", "ℹ️ Это ваше объявление");
+      return;
+    }
+
+    setChatMessage(`Здравствуйте! Меня интересует объявление "${item?.title}". Еще актуально?`);
+    setShowChatModal(true);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim() || sendingChat) return;
+
+    setSendingChat(true);
+    try {
+      const sellerId = item?.ownerId || item?.ownerUid || item?.sellerId;
+      const chatId = await createChat(
+        item.id,
+        user.uid,
+        sellerId,
+        chatMessage.trim()
+      );
+      showNotification("success", "✅ Чат создан!");
+      setTimeout(() => navigate(`/chats/${chatId}`), 1000);
+    } catch (error) {
+      console.error("Ошибка создания чата:", error);
+      showNotification("error", "❌ Не удалось создать чат");
+    } finally {
+      setSendingChat(false);
+      setShowChatModal(false);
+    }
+  };
+
   const handleCall = useCallback(() => {
     const phone = sellerProfile?.phone || "";
     if (phone) {
@@ -367,6 +411,7 @@ export default function ListingDetail() {
   const hasPhone = !!(sellerProfile?.phone);
   const hasWhatsApp = !!(sellerProfile?.whatsapp);
   const hasEmail = !!(sellerProfile?.email);
+  const isOwner = user && (user.uid === (item?.ownerId || item?.ownerUid || item?.sellerId));
 
   if (loading) {
     return (
@@ -439,6 +484,41 @@ export default function ListingDetail() {
         <div className={`action-feedback action-feedback-${actionFeedback.success ? 'success' : 'error'}`}>
           <span className="feedback-icon">{actionFeedback.success ? '✓' : '✗'}</span>
           <span className="feedback-message">{actionFeedback.action}</span>
+        </div>
+      )}
+
+      {/* Модальное окно чата */}
+      {showChatModal && (
+        <div className="modal-overlay" onClick={() => setShowChatModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Написать продавцу</h3>
+            <form onSubmit={handleSendMessage}>
+              <textarea
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Введите ваше сообщение..."
+                rows="4"
+                className="modal-textarea"
+                required
+              />
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="modal-btn modal-btn-cancel"
+                  onClick={() => setShowChatModal(false)}
+                >
+                  Отмена
+                </button>
+                <button 
+                  type="submit" 
+                  className="modal-btn modal-btn-send"
+                  disabled={sendingChat || !chatMessage.trim()}
+                >
+                  {sendingChat ? "Отправка..." : "Отправить"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -703,6 +783,14 @@ export default function ListingDetail() {
               </div>
 
               <div className="contact-actions">
+                {/* Кнопка чата - добавлена */}
+                {!isOwner && (
+                  <button className="action-btn action-chat" onClick={handleChatClick}>
+                    <span className="action-icon">💬</span>
+                    <span className="action-label">Чат с продавцом</span>
+                  </button>
+                )}
+
                 {hasPhone && (
                   <button className="action-btn action-call" onClick={handleCall}>
                     <span className="action-icon">📞</span>
@@ -719,7 +807,7 @@ export default function ListingDetail() {
                             toggleShowFullPhone();
                           }}
                         >
-                  
+                          {showFullPhone ? '👁' : '👁‍🗨'}
                         </button>
                       </div>
                     </div>
@@ -742,7 +830,7 @@ export default function ListingDetail() {
                             toggleShowFullPhone();
                           }}
                         >
-                 
+                          {showFullPhone ? '👁' : '👁‍🗨'}
                         </button>
                       </div>
                     </div>
@@ -759,7 +847,7 @@ export default function ListingDetail() {
                   </button>
                 )}
                 
-                {!hasPhone && !hasWhatsApp && !hasEmail && (
+                {!hasPhone && !hasWhatsApp && !hasEmail && !isOwner && (
                   <div className="no-contacts">
                     <p>Контакты продавца не указаны</p>
                   </div>

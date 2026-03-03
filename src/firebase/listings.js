@@ -1,4 +1,3 @@
-// src/firebase/listings.js
 import {
   collection,
   doc,
@@ -15,7 +14,6 @@ import {
   increment,
   getCountFromServer,
 } from "firebase/firestore";
-
 import { db, auth } from "./firebase.js";
 
 // ===== helpers =====
@@ -379,7 +377,6 @@ export async function registerView(id) {
 
 // ✅ чтобы ListingDetail.jsx мог импортировать
 export const incrementListingViews = registerView;
-// Добавьте эту функцию в файл src/firebase/listings.js
 
 /**
  * Получить количество объявлений по каждой категории
@@ -409,3 +406,6 @@ export async function getCategoryCounts() {
     return {};
   }
 }
+
+// ✅ Алиас для совместимости с Chats.jsx
+export const getListingById = getListing;

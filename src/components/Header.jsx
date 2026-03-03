@@ -48,7 +48,6 @@ export default function Header({ theme, setTheme }) {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Поиск: iPhone, Toyota…"
           />
-      
         </form>
 
         <div className="topActions">
@@ -63,12 +62,16 @@ export default function Header({ theme, setTheme }) {
 
           {user ? (
             <>
+              {/* Кнопка чата */}
+              <Link to="/chats" className="iconBtn" title="Чаты">
+                💬
+              </Link>
+              
               <Link to="/profile" className="userChip" title="Профиль">
                 <span className="avatar">{(meLabel?.[0] || "A").toUpperCase()}</span>
                 <span className="userName">{meLabel}</span>
               </Link>
               <button className="btnGhost" onClick={logout} type="button">Выйти</button>
-              <Link to="/create" className="btnPrimary">+ Подать</Link>
             </>
           ) : (
             <>

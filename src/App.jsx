@@ -13,6 +13,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import VinCheck from "./pages/VinCheck.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import Chats from "./pages/Chats.jsx"; // Импортируем компонент чатов
 
 // Новые страницы
 import About from "./pages/About.jsx";
@@ -73,7 +74,7 @@ export default function App() {
         <div className="container">
           <div className="page">
             <Routes>
-              {/* Все маршруты остаются без изменений */}
+              {/* Все маршруты */}
               <Route path="/" element={<Home />} />
               <Route path="/listings" element={<Listings />} />
               <Route path="/listing/:id" element={<ListingDetail />} />
@@ -82,11 +83,18 @@ export default function App() {
               <Route path="/about" element={<About />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              
+              {/* Защищенные маршруты */}
               <Route path="/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:tab" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} /> {/* Защищенный маршрут для чатов */}
+              
+              {/* Публичные маршруты авторизации */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              
+              {/* Обработка ошибок */}
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
