@@ -23,12 +23,14 @@ export default function ChatDetail() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const prevMessagesLengthRef = useRef(0);
+  const typingTimeoutRef = useRef(null);
 
-  // Функция прокрутки вниз
+  // Прокрутка вниз
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -95,17 +97,14 @@ export default function ChatDetail() {
     const setupSubscription = async () => {
       try {
         unsubscribe = subscribeToMessages(id, (newMessages) => {
-          // Проверяем, добавилось ли новое сообщение
           const hasNewMessage = newMessages.length > prevMessagesLengthRef.current;
           
           setMessages(newMessages);
           
-          // Если добавилось новое сообщение - прокручиваем вниз
           if (hasNewMessage) {
             setTimeout(() => scrollToBottom("smooth"), 100);
           }
           
-          // Отмечаем сообщения как прочитанные
           if (newMessages.length > 0) {
             markMessagesAsRead(id, user.uid).catch(console.error);
           }
@@ -126,7 +125,7 @@ export default function ChatDetail() {
     };
   }, [id, user, chat]);
 
-  // Прокрутка вниз при загрузке чата
+  // Прокрутка при загрузке
   useEffect(() => {
     if (!loading && messages.length > 0) {
       setTimeout(() => scrollToBottom("auto"), 100);
@@ -142,7 +141,6 @@ export default function ChatDetail() {
     try {
       await sendMessage(id, user.uid, newMessage.trim());
       setNewMessage("");
-      // Прокрутка произойдет автоматически через подписку
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Ошибка при отправке сообщения");
@@ -151,6 +149,7 @@ export default function ChatDetail() {
     }
   };
 
+  // Форматирование времени
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     try {
@@ -161,6 +160,7 @@ export default function ChatDetail() {
     }
   };
 
+  // Форматирование даты
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
     try {
@@ -231,7 +231,9 @@ export default function ChatDetail() {
       {/* Шапка чата */}
       <div className="chatDetailHeader">
         <button onClick={() => navigate('/chats')} className="backButton">
-          ←
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
         
         <div className="chatUserInfo">
@@ -254,11 +256,20 @@ export default function ChatDetail() {
           
           <div className="userDetails">
             <h3>{otherUser?.name || otherUser?.phone || "Пользователь"}</h3>
-            {listing && (
-              <Link to={`/listing/${listing.id}`} className="listingLink">
-                {listing.title}
-              </Link>
-            )}
+            <div className="userMeta">
+              <span className="userStatus">
+                <span className="statusDot"></span>
+                {otherUserTyping ? "печатает..." : "онлайн"}
+              </span>
+              {listing && (
+                <>
+                  <span className="metaSeparator">•</span>
+                  <Link to={`/listing/${listing.id}`} className="listingLink">
+                    {listing.title}
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -271,44 +282,38 @@ export default function ChatDetail() {
               <span>{date}</span>
             </div>
             
-            {dateMessages.map((message, index) => {
-              const showAvatar = index === 0 || 
-                dateMessages[index - 1]?.senderId !== message.senderId;
-              
-              return (
-                <div
-                  key={message.id}
-                  className={`message ${message.senderId === user.uid ? 'own' : 'other'}`}
-                >
-                  {message.senderId !== user.uid && showAvatar && (
-                    <div className="messageAvatar">
-                      {otherUser?.photoURL ? (
-                        <img src={otherUser.photoURL} alt="" />
-                      ) : (
-                        <div className="avatarPlaceholder small">
-                          {(otherUser?.name?.[0] || "U").toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="messageBubble">
-                    <div className="messageText">{message.text}</div>
-                    <div className="messageFooter">
-                      <span className="messageTime">
-                        {formatTime(message.createdAt)}
+            {dateMessages.map((message) => (
+              <div
+                key={message.id}
+                className={`message ${message.senderId === user.uid ? 'own' : 'other'}`}
+              >
+                <div className="messageBubble">
+                  <div className="messageText">{message.text}</div>
+                  <div className="messageFooter">
+                    <span className="messageTime">
+                      {formatTime(message.createdAt)}
+                    </span>
+                    {message.senderId === user.uid && (
+                      <span className="messageStatus">
+                        {message.read ? '✓✓' : '✓'}
                       </span>
-                      {message.senderId === user.uid && (
-                        <span className="messageStatus">
-                          {message.read ? '✓✓' : '✓'}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ))}
+        
+        {/* Индикатор печатания */}
+        {otherUserTyping && (
+          <div className="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -318,17 +323,27 @@ export default function ChatDetail() {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Введите сообщение..."
+          placeholder="Написать сообщение..."
           className="messageInput"
           disabled={sending}
           autoFocus
         />
         <button 
           type="submit" 
-          className="sendButton"
+          className={`sendButton ${!newMessage.trim() || sending ? 'disabled' : ''}`}
           disabled={!newMessage.trim() || sending}
         >
-          {sending ? "..." : "→"}
+          {sending ? (
+            <div className="sendingDots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </button>
       </form>
     </div>

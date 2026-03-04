@@ -1,11 +1,14 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { db } from "../firebase/firebase.js";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function Header({ theme, setTheme }) {
   const nav = useNavigate();
   const { user, logout } = useAuth();
   const [sp] = useSearchParams();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [q, setQ] = useState(sp.get("q") || "");
 
@@ -13,6 +16,36 @@ export default function Header({ theme, setTheme }) {
     const name = user?.displayName || "";
     const email = user?.email || "";
     return name || (email ? email.split("@")[0] : "Профиль");
+  }, [user]);
+
+  // Подписка на непрочитанные сообщения
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const chatsRef = collection(db, "chats");
+    const q = query(
+      chatsRef,
+      where("participants", "array-contains", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let totalUnread = 0;
+      
+      snapshot.docs.forEach(doc => {
+        const chatData = doc.data();
+        const userUnread = chatData.unreadCount?.[user.uid] || 0;
+        totalUnread += userUnread;
+      });
+
+      setUnreadCount(totalUnread);
+    }, (error) => {
+      console.error("Error subscribing to unread messages:", error);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   function onSearchSubmit(e) {
@@ -62,9 +95,14 @@ export default function Header({ theme, setTheme }) {
 
           {user ? (
             <>
-              {/* Кнопка чата */}
-              <Link to="/chats" className="iconBtn" title="Чаты">
+              {/* Кнопка чата с красивым бейджем */}
+              <Link to="/chats" className="iconBtn chatLink" title="Чаты">
                 💬
+                {unreadCount > 0 && (
+                  <span className="headerChatBadge">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
               
               <Link to="/profile" className="userChip" title="Профиль">

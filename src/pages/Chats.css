@@ -43,12 +43,59 @@
   transition: background 0.3s ease;
 }
 
-.chatsPage h2 {
+/* ============================= */
+/* HEADER */
+/* ============================= */
+
+.chatsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.chatsHeader h1 {
   font-size: 28px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 24px;
+  margin: 0;
   letter-spacing: -0.01em;
+}
+
+.chatsCount {
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--card-bg);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/* ============================= */
+/* LOADING */
+/* ============================= */
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--subtext);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ============================= */
@@ -68,7 +115,7 @@
 .chatItem {
   display: flex;
   align-items: flex-start;
-  padding: 20px; /* сохраняем твои отступы */
+  padding: 20px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 24px;
@@ -139,11 +186,21 @@
   margin-bottom: 8px;
 }
 
+.chatNameContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .chatName {
   font-weight: 600;
   font-size: 16px;
   color: var(--text);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .chatTime {
@@ -158,85 +215,81 @@
 /* MESSAGE BLOCK */
 /* ============================= */
 
-.chatMessageBlock {
-  margin-bottom: 12px;
-  line-height: 1.5;
+.chatPreview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+  width: 100%;
 }
 
 .chatMessage {
   font-size: 15px;
   color: var(--subtext);
-  margin: 0 0 4px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.chatMessage.unread {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ============================= */
+/* BADGE - в правой части */
+/* ============================= */
+
+.unreadBadge {
+  background: var(--primary);
+  color: white;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px var(--badge-shadow);
+  flex-shrink: 0;
 }
 
 /* ============================= */
 /* LISTING INFO */
 /* ============================= */
 
-.chatListingInfo {
-  display: inline-flex;
-  align-items: center;
-  background: var(--hover-bg);
-  padding: 6px 12px;
-  border-radius: 40px;
-  font-size: 13px;
-  color: var(--primary);
-  font-weight: 500;
-  margin-top: 4px;
-  border: 1px solid var(--border);
-  transition: 0.2s;
-}
-
-.chatListingInfo::before {
-  content: "📱";
-  margin-right: 6px;
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-/* ============================= */
-/* FOOTER */
-/* ============================= */
-
-.chatFooter {
+.chatListing {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
-}
-
-.chatDate {
   font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 
-.chatDate::before {
-  content: "🕒";
-  font-size: 11px;
-  opacity: 0.7;
+.listingTitle {
+  color: var(--primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-weight: 500;
 }
 
-/* ============================= */
-/* BADGE */
-/* ============================= */
-
-.unreadBadge {
-  background: var(--primary);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 40px;
-  font-size: 12px;
+.listingPrice {
+  color: var(--text);
+  margin-left: 8px;
+  white-space: nowrap;
   font-weight: 600;
-  min-width: 24px;
-  text-align: center;
-  box-shadow: 0 2px 8px var(--badge-shadow);
+  background: var(--hover-bg);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
 }
 
 /* ============================= */
@@ -251,52 +304,123 @@
   border: 1px solid var(--border);
 }
 
+.emptyChatsIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.emptyChats h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
 .emptyChats p {
   color: var(--subtext);
   font-size: 16px;
-  margin-top: 12px;
-}
-
-.emptyChats::before {
-  content: "💬";
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
-  opacity: 0.6;
+  margin-bottom: 24px;
 }
 
 /* ============================= */
-/* FOOTER PAGE */
+/* BUTTONS */
 /* ============================= */
 
-.pageFooter {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-  text-align: center;
-}
-
-.footerLinks {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.footerLinks a {
-  color: var(--subtext);
+.btnPrimary {
+  display: inline-block;
+  padding: 12px 28px;
+  background: var(--primary);
+  color: white;
   text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s;
+  border-radius: 30px;
+  font-weight: 500;
+  font-size: 15px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
-.footerLinks a:hover {
-  color: var(--primary);
+.btnPrimary:hover {
+  background: var(--primary);
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--badge-shadow);
 }
 
-.footerCopyright {
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.3px;
+/* ============================= */
+/* MOBILE */
+/* ============================= */
+
+@media (max-width: 640px) {
+  .chatsPage {
+    padding: 16px;
+  }
+
+  .chatsHeader h1 {
+    font-size: 24px;
+  }
+
+  .chatsCount {
+    font-size: 12px;
+    padding: 4px 12px;
+  }
+
+  .chatItem {
+    padding: 16px;
+  }
+
+  .chatAvatar {
+    width: 48px;
+    height: 48px;
+    margin-right: 12px;
+  }
+
+  .avatarPlaceholder {
+    font-size: 20px;
+  }
+
+  .chatName {
+    max-width: 150px;
+    font-size: 15px;
+  }
+
+  .chatTime {
+    font-size: 11px;
+  }
+
+  .chatMessage {
+    font-size: 13px;
+  }
+
+  .unreadBadge {
+    min-width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  .listingPrice {
+    display: none;
+  }
+
+  .emptyChats {
+    padding: 40px 16px;
+  }
+
+  .emptyChatsIcon {
+    font-size: 40px;
+  }
+
+  .emptyChats h3 {
+    font-size: 18px;
+  }
+
+  .emptyChats p {
+    font-size: 14px;
+  }
+
+  .btnPrimary {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
 }

@@ -139,6 +139,7 @@ export function subscribeToMessages(chatId, callback) {
 }
 
 // Отправить сообщение
+// Отправить сообщение
 export async function sendMessage(chatId, senderId, text) {
   if (!chatId || !senderId || !text) {
     throw new Error("Missing required parameters");
@@ -153,12 +154,29 @@ export async function sendMessage(chatId, senderId, text) {
       read: false
     });
     
-    // Обновляем информацию о чате
+    // Получаем данные чата, чтобы узнать получателя
     const chatRef = doc(db, "chats", chatId);
+    const chatSnap = await getDoc(chatRef);
+    const chatData = chatSnap.data();
+    
+    // Находим получателя (противоположный участник)
+    const receiverId = chatData.participants.find(id => id !== senderId);
+    
+    // Создаем объект для обновления unreadCount
+    const unreadCountUpdate = {};
+    
+    // Для отправителя - 0
+    unreadCountUpdate[`unreadCount.${senderId}`] = 0;
+    
+    // Для получателя - увеличиваем на 1
+    const currentReceiverUnread = chatData.unreadCount?.[receiverId] || 0;
+    unreadCountUpdate[`unreadCount.${receiverId}`] = currentReceiverUnread + 1;
+    
+    // Обновляем информацию о чате
     await updateDoc(chatRef, {
       lastMessage: text,
       lastMessageTime: serverTimestamp(),
-      [`unreadCount.${senderId}`]: 0 // Обнуляем для отправителя
+      ...unreadCountUpdate
     });
     
     return {
@@ -174,14 +192,35 @@ export async function sendMessage(chatId, senderId, text) {
 }
 
 // Отметить сообщения как прочитанные
+// Отметить сообщения как прочитанные
 export async function markMessagesAsRead(chatId, userId) {
   if (!chatId || !userId) return;
   
   try {
     const chatRef = doc(db, "chats", chatId);
+    
+    // Обнуляем unreadCount для пользователя
     await updateDoc(chatRef, {
       [`unreadCount.${userId}`]: 0
     });
+    
+    // Также можно отметить все сообщения как прочитанные
+    const messagesRef = collection(db, "chats", chatId, "messages");
+    const q = query(
+      messagesRef, 
+      where("senderId", "!=", userId), 
+      where("read", "==", false)
+    );
+    
+    const unreadMessages = await getDocs(q);
+    
+    // Отмечаем каждое сообщение как прочитанное
+    const updatePromises = unreadMessages.docs.map(doc => 
+      updateDoc(doc.ref, { read: true })
+    );
+    
+    await Promise.all(updatePromises);
+    
   } catch (error) {
     console.error("Error marking messages as read:", error);
   }
@@ -191,6 +230,7 @@ export async function markMessagesAsRead(chatId, userId) {
 // Создать новый чат
 // src/firebase/chats.js
 
+// Создать новый чат с первым сообщением
 // Создать новый чат с первым сообщением
 export async function createChat(listingId, buyerId, sellerId, firstMessage) {
   try {
@@ -213,7 +253,7 @@ export async function createChat(listingId, buyerId, sellerId, firstMessage) {
     if (!querySnapshot.empty) {
       const existingChat = querySnapshot.docs[0];
       
-      // Если есть первое сообщение и чат пустой, отправляем его
+      // Если есть первое сообщение, отправляем его
       if (firstMessage) {
         await sendMessage(existingChat.id, buyerId, firstMessage);
       }
@@ -230,7 +270,7 @@ export async function createChat(listingId, buyerId, sellerId, firstMessage) {
       lastMessageTime: serverTimestamp(),
       unreadCount: {
         [buyerId]: 0,
-        [sellerId]: firstMessage ? 1 : 0
+        [sellerId]: firstMessage ? 1 : 0 // Если есть сообщение, продавец получает +1
       }
     };
     
