@@ -265,29 +265,32 @@ export default function ListingDetail() {
     setShowChatModal(true);
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!chatMessage.trim() || sendingChat) return;
+const handleSendMessage = async (e) => {
+  e.preventDefault();
+  if (!chatMessage.trim() || sendingChat) return;
 
-    setSendingChat(true);
-    try {
-      const sellerId = item?.ownerId || item?.ownerUid || item?.sellerId;
-      const chatId = await createChat(
-        item.id,
-        user.uid,
-        sellerId,
-        chatMessage.trim()
-      );
-      showNotification("success", "✅ Чат создан!");
-      setTimeout(() => navigate(`/chats/${chatId}`), 1000);
-    } catch (error) {
-      console.error("Ошибка создания чата:", error);
-      showNotification("error", "❌ Не удалось создать чат");
-    } finally {
-      setSendingChat(false);
-      setShowChatModal(false);
-    }
-  };
+  setSendingChat(true);
+  try {
+    const sellerId = item?.ownerId || item?.ownerUid || item?.sellerId;
+    
+    // Исправлено: передаем 4 параметра
+    const chatId = await createChat(
+      item.id,           // 1. ID объявления
+      user.uid,          // 2. ID покупателя
+      sellerId,          // 3. ID продавца
+      chatMessage.trim() // 4. Текст сообщения (НОВЫЙ ПАРАМЕТР)
+    );
+    
+    showNotification("success", "✅ Чат создан!");
+    setTimeout(() => navigate(`/chats/${chatId}`), 1000);
+  } catch (error) {
+    console.error("Ошибка создания чата:", error);
+    showNotification("error", "❌ Не удалось создать чат");
+  } finally {
+    setSendingChat(false);
+    setShowChatModal(false);
+  }
+};
 
   const handleCall = useCallback(() => {
     const phone = sellerProfile?.phone || "";

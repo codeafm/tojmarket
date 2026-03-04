@@ -13,7 +13,8 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import VinCheck from "./pages/VinCheck.jsx";
 import NotFound from "./pages/NotFound.jsx";
-import Chats from "./pages/Chats.jsx"; // Импортируем компонент чатов
+import Chats from "./pages/Chats.jsx";
+import ChatDetail from "./pages/ChatDetail.jsx"; // ИМПОРТ ДОБАВЛЕН
 
 // Новые страницы
 import About from "./pages/About.jsx";
@@ -88,7 +89,8 @@ export default function App() {
               <Route path="/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:tab" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} /> {/* Защищенный маршрут для чатов */}
+              <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+              <Route path="/chats/:id" element={<ProtectedRoute><ChatDetail /></ProtectedRoute>} /> {/* ДОБАВЛЕНО */}
               
               {/* Публичные маршруты авторизации */}
               <Route path="/login" element={<Login />} />
