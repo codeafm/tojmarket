@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useLocation, Link } from "react-router-dom";
 import Header from "./components/Header.jsx";
@@ -14,7 +15,7 @@ import Register from "./pages/Register.jsx";
 import VinCheck from "./pages/VinCheck.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Chats from "./pages/Chats.jsx";
-import ChatDetail from "./pages/ChatDetail.jsx"; // ИМПОРТ ДОБАВЛЕН
+import ChatDetail from "./pages/ChatDetail.jsx";
 
 // Новые страницы
 import About from "./pages/About.jsx";
@@ -86,11 +87,31 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               
               {/* Защищенные маршруты */}
-              <Route path="/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/profile/:tab" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
-              <Route path="/chats/:id" element={<ProtectedRoute><ChatDetail /></ProtectedRoute>} /> {/* ДОБАВЛЕНО */}
+              <Route path="/create" element={
+                <ProtectedRoute>
+                  <CreateListing />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/:tab" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/chats" element={
+                <ProtectedRoute>
+                  <Chats />
+                </ProtectedRoute>
+              } />
+              <Route path="/chats/:id" element={
+                <ProtectedRoute>
+                  <ChatDetail />
+                </ProtectedRoute>
+              } />
               
               {/* Публичные маршруты авторизации */}
               <Route path="/login" element={<Login />} />
@@ -117,7 +138,7 @@ export default function App() {
               <Link to="/privacy" className="footerLink muted small">Конфиденциальность</Link>
             </div>
             <div className="muted small">
-              © {new Date().getFullYear()} • Купи/Продай • v1.0.0
+              © {new Date().getFullYear()} • TojMarket • v1.0.0
             </div>
           </div>
         </div>
