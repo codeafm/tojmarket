@@ -145,13 +145,7 @@ export default function Terms() {
                     <a href="mailto:support@tojmarket.tj" className="contact-value">support@tojmarket.tj</a>
                   </div>
                 </div>
-                <div className="contact-item">
-                  <span className="contact-icon">📞</span>
-                  <div className="contact-details">
-                    <span className="contact-label">Телефон:</span>
-                    <a href="tel:+992111142022" className="contact-value">+992 111 14 20 22</a>
-                  </div>
-                </div>
+                 
               </div>
             </div>
           </section>

@@ -145,7 +145,7 @@ export default function Privacy() {
               <h2>Контакты</h2>
               <div className="contact-info">
                 <p>📧 Email: privacy@tojmarket.tj</p>
-                <p>📞 Телефон: +992 111 14 20 22</p>
+              
                 <p>📍 Адрес: г. Душанбе, ул. Рудаки 123</p>
               </div>
             </div>
