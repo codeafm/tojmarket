@@ -3,20 +3,126 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="TojMarket - крупнейшая онлайн-платформа для купли-продажи товаров и услуг в Таджикистане" />
-    <meta name="keywords" content="TojMarket, объявления, Таджикистан, купить, продать, товары, услуги" />
+    <link rel="alternate icon" type="image/png" href="/icons/favicon-32x32.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- Основные SEO мета-теги -->
+    <meta name="description" content="TojMarket - крупнейшая онлайн-платформа для купли-продажи товаров и услуг в Таджикистане. Автомобили, электроника, недвижимость, одежда и многое другое. Бесплатные объявления." />
+    <meta name="keywords" content="TojMarket, объявления, Таджикистан, купить, продать, товары, услуги, Душанбе, автомобили, электроника, недвижимость, работа" />
     <meta name="author" content="TojMarket" />
-    <meta property="og:title" content="TojMarket" />
-    <meta property="og:description" content="Крупнейшая онлайн-платформа для купли-продажи в Таджикистане" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="yandex-verification" content="ваш_код_верификации" />
+    <meta name="google-site-verification" content="ваш_код_верификации" />
+    
+    <!-- Open Graph / Facebook / ВКонтакте -->
+    <meta property="og:title" content="TojMarket - Платформа для купли-продажи в Таджикистане" />
+    <meta property="og:description" content="Крупнейшая онлайн-платформа для купли-продажи в Таджикистане. Тысячи объявлений от частных лиц и компаний." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://tojmarket.tj" />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="TojMarket" />
+    <meta property="og:locale" content="ru_RU" />
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TojMarket - Платформа для купли-продажи" />
+    <meta name="twitter:description" content="Крупнейшая онлайн-платформа для купли-продажи в Таджикистане" />
+    <meta name="twitter:image" content="/twitter-image.png" />
+    <meta name="twitter:site" content="@tojmarket" />
+    
+    <!-- Цвета темы -->
     <meta name="theme-color" content="#3b82f6" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-navbutton-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TojMarket" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="format-detection" content="address=no" />
+    
+    <!-- Иконки для разных устройств - ОСНОВНОЙ НАБОР -->
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/icons/apple-icon-57x57.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/icons/apple-icon-60x60.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/apple-icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/apple-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/icons/apple-icon-114x114.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/apple-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-icon-180x180.png" />
+    
+    <!-- Favicon для разных устройств -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/android-icon-192x192.png" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/android-icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Основной favicon.ico для старых браузеров -->
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Каноническая ссылка -->
+    <link rel="canonical" href="https://tojmarket.tj" />
+    
+    <!-- Альтернативные языки -->
+    <link rel="alternate" href="https://tojmarket.tj" hreflang="ru" />
+    <link rel="alternate" href="https://tojmarket.tj/tg" hreflang="tg" />
+    <link rel="alternate" href="https://tojmarket.tj/en" hreflang="en" />
+    <link rel="alternate" href="https://tojmarket.tj" hreflang="x-default" />
+    
+    <!-- Структурированные данные для поисковых систем -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "TojMarket",
+        "url": "https://tojmarket.tj",
+        "description": "Крупнейшая онлайн-платформа для купли-продажи товаров и услуг в Таджикистане",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://tojmarket.tj/listings?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "TojMarket",
+        "url": "https://tojmarket.tj",
+        "logo": "https://tojmarket.tj/icons/android-icon-192x192.png",
+        "sameAs": [
+          "https://www.facebook.com/tojmarket",
+          "https://www.instagram.com/tojmarket",
+          "https://t.me/tojmarket"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+992-XXX-XXX-XXX",
+          "contactType": "customer service",
+          "availableLanguage": ["Russian", "Tajik", "English"]
+        }
+      }
+    </script>
+    
     <base href="/" />
-    <title>TojMarket - Платформа для купли-продажи в Таджикистане</title>
+    <title>TojMarket - Платформа для купли-продажи в Таджикистане | Автомобили, электроника, недвижимость</title>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,359 @@
+/* SearchWithVisuals.css */
+
+.visualSearchContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Форма поиска */
+.visualSearchForm {
+  margin-bottom: 40px;
+}
+
+.visualSearchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg, #ffffff);
+  border: 2px solid var(--border, #eaeef2);
+  border-radius: 60px;
+  padding: 4px 4px 4px 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+}
+
+.visualSearchWrapper:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.visualSearchIcon {
+  font-size: 22px;
+  color: #94a3b8;
+}
+
+.visualSearchInput {
+  flex: 1;
+  height: 56px;
+  border: none;
+  background: transparent;
+  color: var(--text, #1a1a1a);
+  font-size: 18px;
+  outline: none;
+}
+
+.visualSearchInput::placeholder {
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+.visualClearBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.visualClearBtn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+.visualSearchBtn {
+  height: 52px;
+  padding: 0 40px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.visualSearchBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
+}
+
+.visualSearchBtn:active {
+  transform: translateY(0);
+}
+
+/* Заголовки секций */
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+  margin-bottom: 24px;
+  letter-spacing: -0.3px;
+}
+
+/* Популярные категории */
+.popularCategories {
+  margin-bottom: 48px;
+}
+
+.categoriesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.categoryCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #eaeef2);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+  width: 100%;
+}
+
+.categoryCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--cat-color, #3b82f6);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.categoryIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--cat-color), color-mix(in srgb, var(--cat-color) 70%, white));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+}
+
+.categoryInfo {
+  flex: 1;
+}
+
+.categoryName {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+  margin-bottom: 4px;
+}
+
+.categoryCount {
+  font-size: 14px;
+  color: var(--muted, #64748b);
+}
+
+/* Трендовые поиски */
+.trendingSection {
+  margin-bottom: 48px;
+}
+
+.trendingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.trendingCard {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #eaeef2);
+  border-radius: 24px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.trendingCard:hover {
+  transform: translateY(-6px);
+  border-color: #3b82f6;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.trendingImageWrapper {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.trendingImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.trendingCard:hover .trendingImage {
+  transform: scale(1.1);
+}
+
+.trendingInfo {
+  padding: 16px;
+}
+
+.trendingName {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.trendingPrice {
+  font-size: 15px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: #f0f7ff;
+  padding: 4px 12px;
+  border-radius: 30px;
+  display: inline-block;
+}
+
+/* Недавние поиски */
+.recentDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #eaeef2);
+  border-radius: 24px;
+  margin-top: 8px;
+  padding: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.dropdownTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted, #64748b);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, #eaeef2);
+}
+
+.recentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.recentItem:hover {
+  background: var(--hover-bg, #f8fafc);
+}
+
+.recentIcon {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.recentText {
+  font-size: 15px;
+  color: var(--text, #1a1a1a);
+  flex: 1;
+}
+
+/* Темная тема */
+[data-theme="dark"] {
+  .categoryCard {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .trendingCard {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .trendingPrice {
+    background: #1e293b;
+    color: #60a5fa;
+  }
+
+  .recentDropdown {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .recentItem:hover {
+    background: #2d3a4f;
+  }
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .visualSearchWrapper {
+    padding-left: 16px;
+  }
+
+  .visualSearchInput {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .visualSearchBtn {
+    padding: 0 24px;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .categoriesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .trendingGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sectionTitle {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trendingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .categoryCard {
+    padding: 16px;
+  }
+
+  .categoryIcon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .categoryName {
+    font-size: 16px;
+  }
+}
